@@ -18,13 +18,6 @@ e.g.: Loop remainder, Data locality, Inefficient use of CPU, SIMD-unfriendly, �
 5.	Understand how to design an OpenCL software.
 6.	Design a new sparse matrix storage format‑based SpMV algorithm.
 
-## Schedule
-1.	Read and understand the source code of current sparse matrix storage format (CSR, ELLPACK, CSRL and others from research paper). (2-3 weeks)
-2.	Learn SIMD acceleration technology in SpMV. (1-2 weeks)
-3.	Read and understand the source code of SpMV multiplication functions from Scipy and other sparse matrix storage format‑based SpMV algorithms from research paper. (3-4 weeks)
-4.	Learn OpenCL programming language. (2-3 weeks)
-5.	Design a new sparse matrix storage format and Design a SpMV algorithm to fit the new data structure. (3-4 weeks)
-
 ## Basic concepts
 ### CSR:
 As its name implies, this scheme compresses sparse matrix and reduces the storage requirements of the matrix and executes suitably by performing only the necessary computations on cache-based traditional microprocessors [1].
