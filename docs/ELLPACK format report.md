@@ -23,7 +23,7 @@ ELLPACK can be considered as an approach to fit a sparse matrix in a regular dat
 
 Recall SpMV is y = A * x. If every element i of vector y is computed by a thread identified by index = i and the arrays store their elements in column-major order, then the SpMV based on ELLPACK can improve the performance due to:
 
-1. The coalesced global memory access, thanks to the column-major ordering used to store the matrix elements into the data structures. Then, the thread identified by index i accesses to the elements in the i row: val[i + k ∗ N ] with 0 ≤ k < MaxEntriesByRows where k is the column index into the new data structures val[ ] and J[ ]. Consequently, two threads i and i +1 access to consecutive memory address, thereby full filling the conditions of coalesced global memory access.
+1. The coalesced global memory access, thanks to the column-major ordering used to store the matrix elements into the data structures. Then, the thread identified by index i accesses to the elements in the i row: val[i + k ∗ N] with 0 ≤ k < MaxEntriesByRows where k is the column index into the new data structures val[ ] and J[ ]. Consequently, two threads i and i +1 access to consecutive memory address, thereby full filling the conditions of coalesced global memory access.
 
 2. Non-synchronized execution between different blocks of threads. Every block of threads can complete its computation without synchronization with others blocks, because every thread computes one element of the vector y, and there are no data dependencies in the computation of different elements of y.
 
