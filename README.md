@@ -22,11 +22,19 @@ e.g.: Loop remainder, Data locality, Inefficient use of CPU, SIMD-unfriendly, â€
 ### CSR:
 As its name implies, this scheme compresses sparse matrix and reduces the storage requirements of the matrix and executes suitably by performing only the necessary computations on cache-based traditional microprocessors [1].
 CSR format are efficient arithmetic operations CSR + CSR, CSR * CSR, etc. and efficient row slicing and fast matrix-vector products. But CSR format are slow column slicing operations and changes to the sparsity structure are expensive.
+
+### ELLPACK:
+ELLPACK was introduced as a format to compress a sparse matrix with the purpose of solving large sparse linear systems with ITPACKV subroutines on vector computers.
+This format stores the sparse matrix on two arrays, one float (val[ ]), to save the entries, and one integer (J[ ]), to save the column index of every entry. Both arrays are, at least, of dimension N Ã— MaxEntriesByRows, where N is the number of rows and MaxEntriesByRows is the maximum number of nonzeros per row in the matrix, with the maximum being taken over all rows. Note that the size of all rows in these compressed arrays val[ ] and J[ ] is the same, because every row is padded with zeros.
+ELLPACK can be considered as an approach to fit a sparse matrix in a regular data structure like a dense matrix. Consequently, this format is appropriate to compute operations with sparse matrices on vector architectures.
+
 ### Vector processor:
 A vector processor is a CPU that implements an instruction set containing instructions that operate on one-dimensional arrays of data called vectors, compared to the scalar processors, whose instructions operate on single data items.
+
 ### SIMD:
 SIMD = Single instruction multiple data.
 As its name indicates, instead of performing a single instruction on every single data, it provides the capability of using wider data-width for similar computational operations [3].
+
 ### OpenCL:
 Open Computing Language (OpenCL) is one of the programming languages. It is an industry standard framework for programming computers composed of a combination of CPUs, GPUs and other processors. These so-called heterogeneous systems have become an important class of platforms, and OpenCL is the first industry standard that directly addresses their needs [4].
 
