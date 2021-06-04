@@ -30,6 +30,15 @@ As its name indicates, instead of performing a single instruction on every singl
 ### OpenCL:
 Open Computing Language (OpenCL) is one of the programming languages. It is an industry standard framework for programming computers composed of a combination of CPUs, GPUs and other processors. These so-called heterogeneous systems have become an important class of platforms, and OpenCL is the first industry standard that directly addresses their needs [4].
 
+### Temporal locality:
+If at one point a particular memory location is referenced, then it is likely that the same location will be referenced again soon. There is temporal proximity between adjacent references to the same memory location. In this case it is common to make efforts to store a copy of the referenced data in faster memory storage, to reduce the latency of subsequent references. Temporal locality is a special case of spatial locality, namely when the prospective location is identical to the present location.
+
+### Spatial locality:
+If a particular storage location is referenced at a particular time, then it is likely that nearby memory locations will be referenced soon. In this case it is common to attempt to guess the size and shape of the area around the current reference for which it is worthwhile to prepare faster access for subsequent reference.
+
+### Memory locality (or data locality):
+Spatial locality explicitly relating to memory.
+
 ## References
 1.	Chen X, Xie P, Chi L, et al. An efficient SIMD compression format for sparse matrix‐vector multiplication[J]. Concurrency and Computation: Practice and Experience, 2018, 30(23): e4800.
 2.	Li, Y., Xie, P., Chen, X. et al. VBSF: a new storage format for SIMD sparse matrix–vector multiplication on modern processors. J Supercomput 76, 2063–2081 (2020). https://doi.org/10.1007/s11227-019-02835-4
