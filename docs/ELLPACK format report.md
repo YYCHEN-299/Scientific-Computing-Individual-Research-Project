@@ -50,7 +50,7 @@ for(i = 0; i < N; i++)
 
 ![Alt text](https://github.com/YYCHEN-299/Scientific-Computing-Individual-Research-Project/blob/main/docs/img/Sliced-ELLPACK_format.png)
 
-It can be represented by:
+Sliced ELLPACK format can be represented by:
 
 An array val storing the nonzero values and padded zeros
 
