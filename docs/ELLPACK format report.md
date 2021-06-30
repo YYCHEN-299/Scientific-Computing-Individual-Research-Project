@@ -50,6 +50,23 @@ for(i = 0; i < N; i++)
 
 ![Alt text](https://github.com/YYCHEN-299/Scientific-Computing-Individual-Research-Project/blob/main/docs/img/Sliced-ELLPACK_format.png)
 
+It can be represented by:
+
+An array val storing the nonzero values and padded zeros
+
+An array colidx storing the column indices
+
+An array rlen storing the number of nonzeros in each row
+
+An array storing the beginning position (index in val) of each slice. The rows are padded with zero values so that the lengths of the rows in each slice are equal.
+
+Slicing is the most important modification to the original ELLPACK format. It not only reduces zero-padding significant but also promotes data locality in accessing the input vector. The lower the slice height, the less zero padding would be required. In order to effectively utilize vector registers in CPUs, the slice height should be a multiple of
+the vector length, which is equal to the cache line length of SIMD registers. 
+
+The code of SpMV based on Sliced ELLPACK:
+
+![Alt text](https://github.com/YYCHEN-299/Scientific-Computing-Individual-Research-Project/blob/main/docs/img/Sliced-ELLPACK_SpMV_algo.png)
+
 ## Concepts
 ### ITPACK
 https://web.ma.utexas.edu/CNA/ITPACK/
