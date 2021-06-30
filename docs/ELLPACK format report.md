@@ -48,6 +48,8 @@ for(i = 0; i < N; i++)
 
 ## Sliced ELLPACK
 
+![Alt text](https://github.com/YYCHEN-299/Scientific-Computing-Individual-Research-Project/blob/main/docs/img/Sliced-ELLPACK_format.png)
+
 ## Concepts
 ### ITPACK
 https://web.ma.utexas.edu/CNA/ITPACK/
