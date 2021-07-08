@@ -5,18 +5,21 @@ The Sparse matrix-vector multiplication (SpMV) operation (y = A ∗ x) is widely
 CSR format stores nonzero elements discretely; thus, each multiplication needs memory access to fetch the nonzero elements in the matrix as well as the corresponding elements in the dense vector. Hence, a new pattern is needed to ameliorate this drawback [2].
 
 ## Goals
-In order to take full advantage of SIMD acceleration technology, the goals of my project are:
-1.	Design a new sparse matrix storage format to adapt the SIMD units.
-2.	Design a new sparse matrix storage format‑based SpMV algorithm using SIMD vectorization.
+In order to learn the advantages of SIMD acceleration technology and sparse matrix storge format, the goals of my project are:
+1.	Implement Sliced ELLPACK format and the SpMV algorithm based on it.
+2.	Parallelize the Sliced ELLPACK format SpMV algorithm (At the first stage use Python and Numba, then use OpenCL).
+3.	Design a format converter to convert CSR format to Sliced ELLPACK format.
+4.	Compare SpMV performance between Sliced ELLPACK format and CSR format.
 
 ## Steps
 1.	Understand current sparse matrix storage format and SpMV algorithms.
 2.	Understand SIMD acceleration technology in SpMV.
 3.	Find the reason why current sparse matrix storage format and current SpMV algorithms are not good.
 e.g.: Loop remainder, Data locality, Inefficient use of CPU, SIMD-unfriendly, …
-4.	Design a new sparse matrix storage format.
-5.	Understand how to design an OpenCL software.
-6.	Design a new sparse matrix storage format‑based SpMV algorithm.
+4.	Implement Sliced ELLPACK format and the SpMV algorithm based on it (Use Python and Numba).
+5.	Design a format converter to convert CSR format to Sliced ELLPACK format.
+6.	Understand how to design an OpenCL software and use OpenCL to implement Sliced ELLPACK format SpMV.
+7.	Compare SpMV performance between Sliced ELLPACK format and CSR format.
 
 ## Basic concepts
 ### CSR:
