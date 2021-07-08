@@ -8,6 +8,10 @@ To exploit the sparsity of the matrix the use of pointers is unavoidable but oft
 One reason for this is that pointers usually lead to poor cache utilization, since they lack spatial locality. The number of cache misses for the right- and/or left hand-side vectors can dramatically increase if the sparse matrix has an irregular sparsity structure.
 Another important factor is that memory indirections (pointers) require extra load operations. In sparse matrix operations, the number of floating-point operations per load operation is lower than that of dense matrix operations, limiting overall performance.
 
+## COO format
+![Alt text](https://github.com/YYCHEN-299/Scientific-Computing-Individual-Research-Project/blob/main/docs/img/coo_format.png)
+For each non-zero element, both its column and row indices are explicitly stored (Fig. 1). Elements may either be stored in any order, or elements from the same row may be required to be packed together. This format is well suited with respect to storage space for very sparse matrices with many empty rows, since the storage size is strictly proportional to number of non-zero elements (i.e. it does not have any overhead due to empty rows).
+
 ## Basic CSR format
 ![Alt text](https://github.com/YYCHEN-299/Scientific-Computing-Individual-Research-Project/blob/main/docs/img/csr_format.png)
 
