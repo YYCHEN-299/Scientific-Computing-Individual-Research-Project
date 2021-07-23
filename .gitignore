@@ -87,6 +87,11 @@ pip-wheel-metadata
 *.sql
 *.sqlite
 
+# jupyter lab cache #
+#####################
+code/.ipynb_checkpoints
+code/lib/.ipynb_checkpoints
+
 # pytest cache #
 ################
 .cache/*
