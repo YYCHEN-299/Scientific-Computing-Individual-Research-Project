@@ -89,8 +89,9 @@ pip-wheel-metadata
 
 # jupyter lab cache #
 #####################
-code/.ipynb_checkpoints
-code/lib/.ipynb_checkpoints
+code/.ipynb_checkpoints/
+code/lib/.ipynb_checkpoints/
+.ipynb_checkpoints/
 
 # pytest cache #
 ################
