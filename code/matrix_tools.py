@@ -154,5 +154,5 @@ def CSR_to_SELLPACK(rowptr, colidx, val, slice_height):
                     ell_val.append(0)  # padded zero
     ell_sliceptr.append(nnz_count)
 
-    return np.array(ell_colidx), np.array(ell_sliceptr), \
-           np.array(ell_val, dtype=np.float32)
+    return np.array(ell_colidx), np.array(
+        ell_sliceptr), np.array(ell_val, dtype=np.float32)
