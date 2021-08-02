@@ -125,7 +125,7 @@ def CSR_to_SELLPACK(rowptr, colidx, val, slice_height):
     """
 
     N = len(rowptr) - 1  # number of rows
-    slice_number = math.ceil(N / slice_height)  # how many slices
+    slice_number = math.floor(N / slice_height)  # number of slices
     nnz_count = 0
 
     ell_colidx = []
@@ -150,8 +150,34 @@ def CSR_to_SELLPACK(rowptr, colidx, val, slice_height):
                     ell_colidx.append(colidx[now_ptr + j])
                     ell_val.append(val[now_ptr + j])
                 else:
-                    ell_colidx.append(-1)  # -1 means invalid
+                    ell_colidx.append(0)
                     ell_val.append(0)  # padded zero
+
+    if N % slice_height != 0:  # if have remainder
+        now_row = slice_number * slice_height
+        remain_rows = N - now_row
+        max_nnz = 0
+        for s in range(remain_rows):
+            col_count = rowptr[now_row + s + 1] - rowptr[now_row + s]
+            max_nnz = max(max_nnz, col_count)
+
+        ell_sliceptr.append(nnz_count)
+        for j in range(max_nnz):  # column
+            for k in range(slice_height):  # row
+                nnz_count += 1  # count non-zero number
+                if k >= remain_rows:
+                    ell_colidx.append(0)
+                    ell_val.append(0)  # padded zero
+                else:
+                    idx = now_row + k  # row index
+                    now_ptr = rowptr[idx]  # start index of this row
+                    next_ptr = rowptr[idx + 1]  # start index of next row
+                    if now_ptr + j < next_ptr:
+                        ell_colidx.append(colidx[now_ptr + j])
+                        ell_val.append(val[now_ptr + j])
+                    else:
+                        ell_colidx.append(0)
+                        ell_val.append(0)  # padded zero
     ell_sliceptr.append(nnz_count)
 
     return np.array(ell_colidx), np.array(
