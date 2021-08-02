@@ -123,6 +123,7 @@ def CSR_to_SELLPACK(rowptr, colidx, val, slice_height):
     --------
     >>>
     """
+    # TODO check code and fix bug
 
     N = len(rowptr) - 1  # number of rows
     slice_number = math.floor(N / slice_height)  # number of slices

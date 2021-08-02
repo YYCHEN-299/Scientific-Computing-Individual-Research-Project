@@ -8,6 +8,7 @@ from benchmarks.test_spmv_speed import speed_test, performance_test
 
 
 def main():
+    # TODO write command line test code
     set_num_threads(8)
     # speed_test(1000, 2000, 10, 5, 100)
 
