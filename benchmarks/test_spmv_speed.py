@@ -44,12 +44,11 @@ def speed_test(n_row, n_col, per_nnz, slice_height, t):
     # generate data
     csr_y = np.zeros(n_row, dtype=np.float32)
     slice_count = math.ceil(n_row / slice_height)
-    ell_y = np.zeros(slice_count * slice_height, dtype=np.float32)
 
     # performance test
     print("Start performance test...")
     csr_y = csr_spmv_multi_thread(csr_y, n_row, csr_rowptr,
-                          csr_colidx, csr_val, x)
+                                  csr_colidx, csr_val, x)
     # start test
     csr_start = time.time()
     for i in range(t):
@@ -59,13 +58,13 @@ def speed_test(n_row, n_col, per_nnz, slice_height, t):
     print("CSR format runtime: ", (csr_end - csr_start) / t)
     # performance test
     ell_y = sliced_ellpack_spmv_multi_thread(
-        ell_y, slice_count, ell_sliceptr,
+        slice_count, ell_sliceptr,
         ell_colidx, ell_val, x, slice_height)
     # start test
     ell_start = time.time()
     for i in range(t):
         sliced_ellpack_spmv_multi_thread(
-            ell_y, slice_count, ell_sliceptr,
+            slice_count, ell_sliceptr,
             ell_colidx, ell_val, x, slice_height)
     ell_end = time.time()
     print("Sliced ELLPACK format runtime: ", (ell_end - ell_start) / t)
@@ -102,7 +101,6 @@ def performance_test(sp_matrix, slice_height, t):
     # generate data
     csr_y = np.zeros(n_row, dtype=np.float32)
     slice_count = math.ceil(n_row / slice_height)
-    ell_y = np.zeros(slice_count * slice_height, dtype=np.float32)
 
     # performance test
     # print("Start performance test...")
@@ -117,16 +115,19 @@ def performance_test(sp_matrix, slice_height, t):
     print("CSR format runtime: ", (csr_end - csr_start) / t)
     # performance test
     ell_y = sliced_ellpack_spmv_multi_thread(
-        ell_y, slice_count, ell_sliceptr,
+        slice_count, ell_sliceptr,
         ell_colidx, ell_val, x, slice_height)
     # start test
     ell_start = time.time()
     for i in range(t):
         sliced_ellpack_spmv_multi_thread(
-            ell_y, slice_count, ell_sliceptr,
+            slice_count, ell_sliceptr,
             ell_colidx, ell_val, x, slice_height)
     ell_end = time.time()
     print("Sliced ELLPACK format runtime: ", (ell_end - ell_start) / t, "(slice:", slice_height, ")")
     check_number = sum(csr_y - ell_y[:n_row])
     # print("Check number = ", check_number, "(should be 0 if result correct)")
     # print(sliced_ellpack_spmv_multi_thread.parallel_diagnostics(level=4))
+    print(
+        sliced_ellpack_spmv_multi_thread.inspect_asm()
+        [list(sliced_ellpack_spmv_multi_thread.inspect_asm().keys())[0]])
