@@ -1,13 +1,13 @@
-import numpy as np
-
 import numba
+import numpy as np
 from numba import jit
 
-import llvmlite.binding as llvm
-llvm.set_option('', '--debug-only=loop-vectorize')
+
+# import llvmlite.binding as llvm
+# llvm.set_option('', '--debug-only=loop-vectorize')
 
 
-@jit(nopython=True, parallel=True, nogil=True)
+@jit(nopython=True, parallel=True, nogil=True, fastmath=True)
 def csr_spmv_multi_thread(y, num_row, rowptr, colidx, val, x):
     """
     This function is multi thread CSR format based SpMV (y=Ax).
@@ -46,9 +46,9 @@ def csr_spmv_multi_thread(y, num_row, rowptr, colidx, val, x):
     return y
 
 
-@jit(nopython=True, parallel=True, nogil=True)
-def sliced_ellpack_spmv_multi_thread(slice_count, slice_ptr,
-                                     colidx, val, x, slice_height):
+@jit(nopython=True, parallel=True, nogil=True, fastmath=True)
+def sliced_ellpack_spmv(slice_count, slice_ptr,
+                        colidx, val, x, slice_height):
     """
     This function is multi thread Sliced ELLPACK format based SpMV (y=Ax).
 
@@ -79,16 +79,22 @@ def sliced_ellpack_spmv_multi_thread(slice_count, slice_ptr,
     >>>
     """
 
-    y = np.zeros(slice_count * slice_height, dtype=np.float32)
+    y = np.zeros(slice_count * slice_height, dtype='float32')
+
     for s in numba.prange(slice_count):
-        # loop_y = np.empty(slice_height, dtype=np.float32)
-        for r in numba.prange(slice_height):
+        for r in range(slice_height):
             row_data = 0.0
             for i in range(slice_ptr[s] + r, slice_ptr[s + 1], slice_height):
-                rd = x[colidx[i]] * val[i]
-                row_data += rd
-            y[s * slice_height + r] += row_data
-            # loop_y[0] = 0
-        # y[s * slice_height:(s + 1) * slice_height] = loop_y
+                row_data += x[colidx[i]] * val[i]
+            y[s * slice_height + r] = row_data
 
     return y
+
+
+@jit(nopython=True, fastmath=True, parallel=True, nogil=True)
+def array_parallel_test(a, b):
+    c = 0.
+    for i in numba.prange(a.shape[0]):
+        c += a[i] * b[i]
+
+    return c

@@ -1,5 +1,5 @@
-import random
 import math
+import random
 
 import numpy as np
 
@@ -92,7 +92,7 @@ def spmatrix_to_CSR(sp_matrix):
                 val.append(sp_matrix[i][j])
     rowptr.append(nnz_count)
 
-    return np.array(rowptr), np.array(colidx), np.array(val, dtype=np.float32)
+    return np.array(rowptr), np.array(colidx), np.array(val, dtype='float32')
 
 
 def CSR_to_SELLPACK(rowptr, colidx, val, slice_height):
@@ -182,4 +182,4 @@ def CSR_to_SELLPACK(rowptr, colidx, val, slice_height):
     ell_sliceptr.append(nnz_count)
 
     return np.array(ell_colidx), np.array(
-        ell_sliceptr), np.array(ell_val, dtype=np.float32)
+        ell_sliceptr), np.array(ell_val, dtype='float32')

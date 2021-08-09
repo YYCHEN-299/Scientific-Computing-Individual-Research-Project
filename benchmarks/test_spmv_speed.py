@@ -1,19 +1,20 @@
-import time
 import math
+import time
 
 import numpy as np
 
+from code.debug_tools import find_instr
+from code.matrix_tools import CSR_to_SELLPACK
 from code.matrix_tools import random_spmatrix
 from code.matrix_tools import spmatrix_to_CSR
-from code.matrix_tools import CSR_to_SELLPACK
-
 from code.spmv_kernel import csr_spmv_multi_thread
-from code.spmv_kernel import sliced_ellpack_spmv_multi_thread
+from code.spmv_kernel import sliced_ellpack_spmv
+from code.spmv_kernel import array_parallel_test
 
 
-def speed_test(n_row, n_col, per_nnz, slice_height, t):
+def random_data_test(n_row, n_col, per_nnz, slice_height, t):
     """
-        Test SpMV performance.
+    Test SpMV performance
     """
 
     # generate a sparse matrix fill with random value
@@ -39,10 +40,10 @@ def speed_test(n_row, n_col, per_nnz, slice_height, t):
     # print(ell_sliceptr)
     # print(ell_val)
     # generate x array
-    x = np.ones(n_col, dtype=np.float32)
-    # x *= 1.23
+    x = np.ones(n_col, dtype='float32')
+    x *= 1.23
     # generate data
-    csr_y = np.zeros(n_row, dtype=np.float32)
+    csr_y = np.zeros(n_row, dtype='float32')
     slice_count = math.ceil(n_row / slice_height)
 
     # performance test
@@ -57,27 +58,28 @@ def speed_test(n_row, n_col, per_nnz, slice_height, t):
     csr_end = time.time()
     print("CSR format runtime: ", (csr_end - csr_start) / t)
     # performance test
-    ell_y = sliced_ellpack_spmv_multi_thread(
-        slice_count, ell_sliceptr,
-        ell_colidx, ell_val, x, slice_height)
+    ell_y = sliced_ellpack_spmv(slice_count, ell_sliceptr,
+                                ell_colidx, ell_val, x, slice_height)
     # start test
     ell_start = time.time()
     for i in range(t):
-        sliced_ellpack_spmv_multi_thread(
-            slice_count, ell_sliceptr,
-            ell_colidx, ell_val, x, slice_height)
+        sliced_ellpack_spmv(slice_count, ell_sliceptr,
+                            ell_colidx, ell_val, x, slice_height)
     ell_end = time.time()
     print("Sliced ELLPACK format runtime: ", (ell_end - ell_start) / t)
     # print(csr_y)
     # print(ell_y)
     check_number = sum(csr_y - ell_y[:n_row])
     print("Check number = ", check_number, "(should be 0 if result correct)")
-    # print(sliced_ellpack_spmv_multi_thread.parallel_diagnostics(level=4))
+    # print(sliced_ellpack_spmv.parallel_diagnostics(level=4))
+    # print(sliced_ellpack_spmv.inspect_asm()
+    #       [list(sliced_ellpack_spmv.inspect_asm().keys())[0]])
+    find_instr(sliced_ellpack_spmv, keyword='add')
 
 
-def performance_test(sp_matrix, slice_height, t):
+def data_set_test(sp_matrix, slice_height, t):
     """
-        Test SpMV performance.
+    Test SpMV performance
     """
 
     # get sparse matrix shape
@@ -96,10 +98,10 @@ def performance_test(sp_matrix, slice_height, t):
         csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate x array
-    x = np.ones(n_col, dtype=np.float32)
-    # x *= 1.23
+    x = np.ones(n_col, dtype='float32')
+    x *= 1.23
     # generate data
-    csr_y = np.zeros(n_row, dtype=np.float32)
+    csr_y = np.zeros(n_row, dtype='float32')
     slice_count = math.ceil(n_row / slice_height)
 
     # performance test
@@ -114,20 +116,30 @@ def performance_test(sp_matrix, slice_height, t):
     csr_end = time.time()
     print("CSR format runtime: ", (csr_end - csr_start) / t)
     # performance test
-    ell_y = sliced_ellpack_spmv_multi_thread(
-        slice_count, ell_sliceptr,
-        ell_colidx, ell_val, x, slice_height)
+    ell_y = sliced_ellpack_spmv(slice_count, ell_sliceptr,
+                                ell_colidx, ell_val, x, slice_height)
     # start test
     ell_start = time.time()
     for i in range(t):
-        sliced_ellpack_spmv_multi_thread(
-            slice_count, ell_sliceptr,
-            ell_colidx, ell_val, x, slice_height)
+        sliced_ellpack_spmv(slice_count, ell_sliceptr,
+                            ell_colidx, ell_val, x, slice_height)
     ell_end = time.time()
     print("Sliced ELLPACK format runtime: ", (ell_end - ell_start) / t, "(slice:", slice_height, ")")
     check_number = sum(csr_y - ell_y[:n_row])
     # print("Check number = ", check_number, "(should be 0 if result correct)")
-    # print(sliced_ellpack_spmv_multi_thread.parallel_diagnostics(level=4))
-    print(
-        sliced_ellpack_spmv_multi_thread.inspect_asm()
-        [list(sliced_ellpack_spmv_multi_thread.inspect_asm().keys())[0]])
+    # print(sliced_ellpack_spmv.parallel_diagnostics(level=4))
+    # print(sliced_ellpack_spmv.inspect_asm()
+    #       [list(sliced_ellpack_spmv.inspect_asm().keys())[0]])
+    find_instr(sliced_ellpack_spmv, keyword='mul')
+
+
+def avx_test():
+    a = np.random.rand(10)
+    b = np.random.rand(10)
+    x32 = np.linspace(1, 2, 10000, dtype='float32')
+    y32 = np.linspace(1, 2, 10000, dtype='float32')
+    c = array_parallel_test(x32, y32)
+
+    print(array_parallel_test.inspect_asm()
+          [list(array_parallel_test.inspect_asm().keys())[0]])
+    find_instr(array_parallel_test, keyword='mul')
