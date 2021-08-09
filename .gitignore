@@ -118,3 +118,4 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.dSYM
+/data/
