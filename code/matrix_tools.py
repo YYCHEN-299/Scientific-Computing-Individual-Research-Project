@@ -52,7 +52,7 @@ def random_spmatrix(n_row, n_col, per_nnz):
     return sp_matrix, nnz_count, row_max_nnz
 
 
-def spmatrix_to_CSR(sp_matrix):
+def spmatrix_to_csr(sp_matrix):
     """
     This function convert sparse matrix to CSR format.
 
@@ -95,7 +95,7 @@ def spmatrix_to_CSR(sp_matrix):
     return np.array(rowptr), np.array(colidx), np.array(val, dtype='float32')
 
 
-def CSR_to_SELLPACK(rowptr, colidx, val, slice_height):
+def csr_to_sellpack(rowptr, colidx, val, slice_height):
     """
     This fucntion convert CSR format to Sliced ELLPACK format.
 

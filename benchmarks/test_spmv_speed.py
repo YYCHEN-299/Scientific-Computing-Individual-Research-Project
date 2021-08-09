@@ -4,9 +4,9 @@ import time
 import numpy as np
 
 from code.debug_tools import find_instr
-from code.matrix_tools import CSR_to_SELLPACK
+from code.matrix_tools import csr_to_sellpack
 from code.matrix_tools import random_spmatrix
-from code.matrix_tools import spmatrix_to_CSR
+from code.matrix_tools import spmatrix_to_csr
 from code.spmv_kernel import csr_spmv_multi_thread
 from code.spmv_kernel import sliced_ellpack_spmv
 from code.spmv_kernel import array_parallel_test
@@ -28,13 +28,13 @@ def random_data_test(n_row, n_col, per_nnz, slice_height, t):
     # print(sp_matrix)
     # convert sparse matrix to CSR format
     print("Convert sparse matrix to CSR format...")
-    csr_rowptr, csr_colidx, csr_val = spmatrix_to_CSR(sp_matrix)
+    csr_rowptr, csr_colidx, csr_val = spmatrix_to_csr(sp_matrix)
     # print(csr_rowptr)
     # print(csr_colidx)
     # print(csr_val)
     # convert CSR to Sliced ELLPACK format
     print("Convert CSR to Sliced ELLPACK format...")
-    ell_colidx, ell_sliceptr, ell_val = CSR_to_SELLPACK(
+    ell_colidx, ell_sliceptr, ell_val = csr_to_sellpack(
         csr_rowptr, csr_colidx, csr_val, slice_height)
     # print(ell_colidx)
     # print(ell_sliceptr)
@@ -94,7 +94,7 @@ def data_set_test(sp_matrix, slice_height, t):
 
     # convert CSR to Sliced ELLPACK format
     # print("Convert CSR to Sliced ELLPACK format...")
-    ell_colidx, ell_sliceptr, ell_val = CSR_to_SELLPACK(
+    ell_colidx, ell_sliceptr, ell_val = csr_to_sellpack(
         csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate x array
@@ -138,7 +138,7 @@ def avx_test():
     b = np.random.rand(10)
     x32 = np.linspace(1, 2, 10000, dtype='float32')
     y32 = np.linspace(1, 2, 10000, dtype='float32')
-    c = array_parallel_test(x32, y32)
+    array_parallel_test(x32, y32)
 
     print(array_parallel_test.inspect_asm()
           [list(array_parallel_test.inspect_asm().keys())[0]])
