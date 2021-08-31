@@ -89,12 +89,3 @@ def sliced_ellpack_spmv(slice_count, slice_ptr,
             y[s * slice_height + r] = row_data
 
     return y
-
-
-@jit(nopython=True, fastmath=True, parallel=True, nogil=True)
-def array_parallel_test(a, b):
-    c = 0.
-    for i in numba.prange(a.shape[0]):
-        c += a[i] * b[i]
-
-    return c

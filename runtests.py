@@ -1,23 +1,24 @@
-import sys
+import argparse
 
-from scipy.io import mmread
 from numba import set_num_threads
-from argparse import ArgumentParser, REMAINDER
+from scipy.io import mmread
 
-from benchmarks.test_spmv_speed import random_data_test, data_set_test, avx_test
+from benchmarks.spmv_performance_benchmarks import data_set_test
 
 
 def main():
-    # TODO command line test code
-    # set_num_threads(8)
-    # row, column, nnz, slice height, loop number
-    random_data_test(100, 200, 0, 64, 100)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--threads", type=int, metavar='int',
+                        help="number of threads")
+    parser.add_argument("-f", "--file", metavar='filename',
+                        help="filename of matrix data")
+    parser.add_argument("-s", "--slice", type=int, metavar='int',
+                        help="slice height of the Sliced ELLPACK format")
+    args = parser.parse_args()
 
-    # matrix_data = mmread('data/consph.mtx').tocsr()
-    # data_set_test(matrix_data, 5, 100)
-    # avx_test()
-
-    return 1
+    set_num_threads(args.threads)
+    matrix_data = mmread(args.file).tocsr()
+    data_set_test(matrix_data, args.slice, 100)
 
 
 if __name__ == "__main__":
