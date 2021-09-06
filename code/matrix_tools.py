@@ -25,10 +25,6 @@ def random_spmatrix(n_row, n_col, per_nnz):
         Total none zero elements number
     row_max_nnz : int
         Row wise max none zero elements number
-
-    Examples
-    --------
-    >>>
     """
 
     sp_matrix = []
@@ -69,10 +65,6 @@ def spmatrix_to_csr(sp_matrix):
         Column index of CSR format
     val : ndarrays
         None zero elements value of CSR format
-
-    Examples
-    --------
-    >>>
     """
 
     n_row = len(sp_matrix)
@@ -92,7 +84,7 @@ def spmatrix_to_csr(sp_matrix):
                 val.append(sp_matrix[i][j])
     rowptr.append(nnz_count)
 
-    return np.array(rowptr), np.array(colidx), np.array(val, dtype='float32')
+    return np.array(rowptr), np.array(colidx), np.array(val, dtype=np.float32)
 
 
 def csr_to_sellpack(rowptr, colidx, val, slice_height):
@@ -118,12 +110,7 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
         Slice pointer of Sliced ELLPACK format
     ell_val : ndarrays
         None zero elements value of CSR format
-
-    Examples
-    --------
-    >>>
     """
-    # TODO check code and fix bug
 
     N = len(rowptr) - 1  # number of rows
     slice_number = math.floor(N / slice_height)  # number of slices
@@ -141,17 +128,19 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
             max_nnz = max(max_nnz, col_count)
 
         ell_sliceptr.append(nnz_count)
-        for j in range(max_nnz):
-            for k in range(slice_height):
+        pre_idx = dict()
+        for j in range(max_nnz):  # column-wise scan
+            for k in range(slice_height):  # row-wise scan
                 idx = i * slice_height + k  # row index
                 now_ptr = rowptr[idx]  # start index of this row
                 next_ptr = rowptr[idx + 1]  # start index of next row
                 nnz_count += 1  # count non-zero number
                 if now_ptr + j < next_ptr:
+                    pre_idx[k] = colidx[now_ptr + j]
                     ell_colidx.append(colidx[now_ptr + j])
                     ell_val.append(val[now_ptr + j])
                 else:
-                    ell_colidx.append(0)
+                    ell_colidx.append(pre_idx[k])
                     ell_val.append(0)  # padded zero
 
     if N % slice_height != 0:  # if have remainder
@@ -163,6 +152,7 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
             max_nnz = max(max_nnz, col_count)
 
         ell_sliceptr.append(nnz_count)
+        pre_idx = dict()
         for j in range(max_nnz):  # column
             for k in range(slice_height):  # row
                 nnz_count += 1  # count non-zero number
@@ -174,12 +164,13 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
                     now_ptr = rowptr[idx]  # start index of this row
                     next_ptr = rowptr[idx + 1]  # start index of next row
                     if now_ptr + j < next_ptr:
+                        pre_idx[k] = colidx[now_ptr + j]
                         ell_colidx.append(colidx[now_ptr + j])
                         ell_val.append(val[now_ptr + j])
                     else:
-                        ell_colidx.append(0)
+                        ell_colidx.append(pre_idx[k])
                         ell_val.append(0)  # padded zero
     ell_sliceptr.append(nnz_count)
 
     return np.array(ell_colidx), np.array(
-        ell_sliceptr), np.array(ell_val, dtype='float32')
+        ell_sliceptr), np.array(ell_val, dtype=np.float32)
