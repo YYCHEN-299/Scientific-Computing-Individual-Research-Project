@@ -29,11 +29,17 @@ def numba_test(threads, matrix_data, slice_height):
 
 
 def opencl_test(matrix_data, slice_height):
-    os.environ['PYOPENCL_CTX'] = '0'
     # os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
-    opencl_performance_benchmark(matrix_data, slice_height, 200)
+    opencl_performance_benchmark(matrix_data, slice_height, 100)
 
 
 if __name__ == "__main__":
-    matrix_data = mmread('data/consph.mtx').tocsr()
-    opencl_test(matrix_data, 64)
+    os.environ['PYOPENCL_CTX'] = '0'
+    datasets = ['data/consph.mtx', 'data/cant.mtx',
+                'data/mac_econ_fwd500.mtx', 'data/mc2depi.mtx',
+                'data/pdb1HYS.mtx', 'data/pwtk.mtx', 'data/rail4284.mtx',
+                'data/rma10.mtx', 'data/scircuit.mtx', 'data/shipsec1.mtx',
+                'data/webbase-1M.mtx']
+    for str in datasets:
+        matrix_data = mmread(str).tocsr()
+        opencl_test(matrix_data, 64)
