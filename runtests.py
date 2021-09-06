@@ -34,7 +34,7 @@ def opencl_test(matrix_data, slice_height):
 
 
 if __name__ == "__main__":
-    os.environ['PYOPENCL_CTX'] = '0'
+    os.environ['PYOPENCL_CTX'] = '2'
     datasets = ['data/consph.mtx', 'data/cant.mtx',
                 'data/mac_econ_fwd500.mtx', 'data/mc2depi.mtx',
                 'data/pdb1HYS.mtx', 'data/pwtk.mtx', 'data/rail4284.mtx',

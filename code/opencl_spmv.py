@@ -103,11 +103,12 @@ class SELLSpMV:
     def run(self, n=1):
         t_start = time.perf_counter()
         for i in range(n):
-            self.program.sell_spmv(self.queue, (256 * 256,), (256,),
+            self.program.sell_spmv(self.queue, (self.slice_count,), None,
                                    self.slice_ptr_buf, self.colidx_buf,
                                    self.val_buf, self.x_buf,
                                    np.int32(self.slice_height),
-                                   np.int32(self.slice_count), self.y_buf)
+                                   np.int32(self.slice_count), self.y_buf,
+                                   self.local_mem)
         t_end = time.perf_counter()
         return t_end - t_start
 
