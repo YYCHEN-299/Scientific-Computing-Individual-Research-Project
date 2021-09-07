@@ -6,6 +6,7 @@ from scipy.io import mmread
 
 from benchmarks.spmv_performance_benchmarks import numba_performance_benchmark
 from benchmarks.spmv_performance_benchmarks import opencl_performance_benchmark
+from benchmarks.spmv_performance_benchmarks import cuda_performance_benchmark
 
 
 def main():
@@ -29,12 +30,9 @@ def numba_test(threads, matrix_data, slice_height):
 
 
 def opencl_test(matrix_data, slice_height):
-    # os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
-    opencl_performance_benchmark(matrix_data, slice_height, 100)
-
-
-if __name__ == "__main__":
     os.environ['PYOPENCL_CTX'] = '2'
+    # os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
+
     datasets = ['data/consph.mtx', 'data/cant.mtx',
                 'data/mac_econ_fwd500.mtx', 'data/mc2depi.mtx',
                 'data/pdb1HYS.mtx', 'data/pwtk.mtx', 'data/rail4284.mtx',
@@ -42,4 +40,9 @@ if __name__ == "__main__":
                 'data/webbase-1M.mtx']
     for str in datasets:
         matrix_data = mmread(str).tocsr()
-        opencl_test(matrix_data, 64)
+        opencl_performance_benchmark(matrix_data, slice_height, 100)
+
+
+if __name__ == "__main__":
+    matrix_data = mmread('data/cant.mtx').tocsr()
+    cuda_performance_benchmark(matrix_data, 64, 100)

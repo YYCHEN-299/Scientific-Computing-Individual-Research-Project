@@ -12,7 +12,7 @@ class BaseSELLSpMV:
         self.queue = cl.CommandQueue(self.ctx)
 
         # read in the OpenCL source file as a string
-        f = open('code/ClBaseSELLKernel.cl', 'r')
+        f = open('code/clkernels/ClBaseSELLKernel.cl', 'r')
         fstr = ''.join(f.readlines())
 
         # create the program
@@ -64,7 +64,7 @@ class SELLSpMV:
         self.queue = cl.CommandQueue(self.ctx)
 
         # read in the OpenCL source file as a string
-        f = open('code/ClSELLKernel.cl', 'r')
+        f = open('code/clkernels/ClSELLKernel.cl', 'r')
         fstr = ''.join(f.readlines())
 
         # create the program
@@ -103,7 +103,9 @@ class SELLSpMV:
     def run(self, n=1):
         t_start = time.perf_counter()
         for i in range(n):
-            self.program.sell_spmv(self.queue, (self.slice_count,), None,
+            self.program.sell_spmv(self.queue,
+                                   (self.slice_count * self.slice_height,),
+                                   (self.slice_height,),
                                    self.slice_ptr_buf, self.colidx_buf,
                                    self.val_buf, self.x_buf,
                                    np.int32(self.slice_height),
@@ -124,7 +126,7 @@ class CSRSpMV:
         self.queue = cl.CommandQueue(self.ctx)
 
         # read in the OpenCL source file as a string
-        f = open('code/ClCSRKernel.cl', 'r')
+        f = open('code/clkernels/ClCSRKernel.cl', 'r')
         fstr = ''.join(f.readlines())
 
         # create the program

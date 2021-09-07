@@ -92,6 +92,7 @@ def numba_sliced_ellpack_spmv(slice_count, slice_ptr,
 @jit(nopython=True, parallel=True, nogil=True, fastmath=True)
 def numba_sliced_ellpack_spmv_mark2(slice_count, slice_ptr,
                                     colidx, val, x, slice_height):
+
     y = np.zeros(slice_count * slice_height, dtype='float32')
     for s in numba.prange(slice_count):
         inner_y1 = 0.0
