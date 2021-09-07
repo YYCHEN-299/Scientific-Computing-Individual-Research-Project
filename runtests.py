@@ -44,5 +44,7 @@ def opencl_test(matrix_data, slice_height):
 
 
 if __name__ == "__main__":
-    matrix_data = mmread('data/cant.mtx').tocsr()
-    cuda_performance_benchmark(matrix_data, 64, 100)
+    # matrix_data = mmread('data/cant.mtx').tocsr()
+    # cuda_performance_benchmark(matrix_data, 64, 100)
+    matrix_data = 0
+    opencl_test(matrix_data, 64)

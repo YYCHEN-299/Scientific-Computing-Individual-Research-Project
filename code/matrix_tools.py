@@ -108,6 +108,8 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
         Column index of Sliced ELLPACK format
     ell_sliceptr : ndarrays
         Slice pointer of Sliced ELLPACK format
+    ell_slicecol : ndarrays
+        Column length of a slice
     ell_val : ndarrays
         None zero elements value of CSR format
     """
@@ -118,6 +120,7 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
 
     ell_colidx = []
     ell_sliceptr = []
+    ell_slicecol = []
     ell_val = []
 
     for i in range(slice_number):
@@ -128,6 +131,7 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
             max_nnz = max(max_nnz, col_count)
 
         ell_sliceptr.append(nnz_count)
+        ell_slicecol.append(max_nnz)
         pre_idx = dict()
         for j in range(max_nnz):  # column-wise scan
             for k in range(slice_height):  # row-wise scan
@@ -152,6 +156,7 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
             max_nnz = max(max_nnz, col_count)
 
         ell_sliceptr.append(nnz_count)
+        ell_slicecol.append(max_nnz)
         pre_idx = dict()
         for j in range(max_nnz):  # column
             for k in range(slice_height):  # row
@@ -172,5 +177,5 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
                         ell_val.append(0)  # padded zero
     ell_sliceptr.append(nnz_count)
 
-    return np.array(ell_colidx), np.array(
-        ell_sliceptr), np.array(ell_val, dtype=np.float32)
+    return np.array(ell_colidx), np.array(ell_sliceptr), \
+        np.array(ell_slicecol), np.array(ell_val, dtype=np.float32)

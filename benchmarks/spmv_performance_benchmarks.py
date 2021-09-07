@@ -33,7 +33,7 @@ def numba_random_data_test(n_row, n_col, per_nnz, slice_height, t):
     csr_rowptr, csr_colidx, csr_val = spmatrix_to_csr(sp_matrix)
 
     # convert CSR to Sliced ELLPACK format
-    ell_colidx, ell_sliceptr, ell_val = csr_to_sellpack(
+    ell_colidx, ell_sliceptr, _, ell_val = csr_to_sellpack(
         csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
@@ -96,7 +96,7 @@ def numba_performance_benchmark(sp_matrix, slice_height, t):
     csr_val = sp_matrix.data.astype(np.float32)
 
     # convert CSR to Sliced ELLPACK format
-    ell_colidx, ell_sliceptr, ell_val = csr_to_sellpack(
+    ell_colidx, ell_sliceptr, _, ell_val = csr_to_sellpack(
         csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
@@ -160,7 +160,7 @@ def opencl_performance_benchmark(sp_matrix, slice_height, t):
     csr_val = sp_matrix.data.astype(np.float32)
 
     # convert CSR to Sliced ELLPACK format
-    ell_colidx, ell_sliceptr, ell_val = csr_to_sellpack(
+    ell_colidx, ell_sliceptr, ell_slicecol, ell_val = csr_to_sellpack(
         csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
@@ -185,7 +185,8 @@ def opencl_performance_benchmark(sp_matrix, slice_height, t):
     print("CSR perf time: ", csr_time / t)
 
     # Base Sliced ELLPACK test
-    base_sell_spmv = BaseSELLSpMV(n_row, slice_count, ell_sliceptr,
+    base_sell_spmv = BaseSELLSpMV(n_row, slice_count,
+                                  ell_sliceptr, ell_slicecol,
                                   ell_colidx, ell_val, x, slice_height)
     base_sell_spmv.run()
     bsell_y = base_sell_spmv.get_result()
@@ -194,7 +195,7 @@ def opencl_performance_benchmark(sp_matrix, slice_height, t):
     print("Base SELL perf time: ", sell_time / t)
 
     # Sliced ELLPACK test
-    sell_spmv = SELLSpMV(n_row, slice_count, ell_sliceptr,
+    sell_spmv = SELLSpMV(n_row, slice_count, ell_sliceptr, ell_slicecol,
                          ell_colidx, ell_val, x, slice_height)
     sell_spmv.run()
     sell_y = sell_spmv.get_result()
@@ -236,7 +237,7 @@ def cuda_performance_benchmark(sp_matrix, slice_height, t):
     csr_val = sp_matrix.data.astype(np.float32)
 
     # convert CSR to Sliced ELLPACK format
-    ell_colidx, ell_sliceptr, ell_val = csr_to_sellpack(
+    ell_colidx, ell_sliceptr, _, ell_val = csr_to_sellpack(
         csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector

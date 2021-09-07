@@ -6,8 +6,8 @@ import time
 
 
 class BaseSELLSpMV:
-    def __init__(self, n_row, slice_count,
-                 slice_ptr, colidx, val, x, slice_height):
+    def __init__(self, n_row, slice_count, slice_ptr,
+                 slice_col, colidx, val, x, slice_height):
         self.ctx = cl.create_some_context()
         self.queue = cl.CommandQueue(self.ctx)
 
@@ -23,10 +23,13 @@ class BaseSELLSpMV:
         self.slice_count = slice_count
         self.slice_height = slice_height
         mf = cl.mem_flags
-        self._y = np.zeros(n_row, dtype=np.float32)
+        self._y = np.zeros(slice_count * slice_height, dtype=np.float32)
         self.slice_ptr_buf = cl.Buffer(self.ctx,
                                        mf.READ_ONLY | mf.COPY_HOST_PTR,
                                        hostbuf=slice_ptr)
+        self.slice_col_buf = cl.Buffer(self.ctx,
+                                       mf.READ_ONLY | mf.COPY_HOST_PTR,
+                                       hostbuf=slice_col)
         self.colidx_buf = cl.Buffer(self.ctx,
                                     mf.READ_ONLY | mf.COPY_HOST_PTR,
                                     hostbuf=colidx)
@@ -46,7 +49,8 @@ class BaseSELLSpMV:
             self.program.bsell_spmv(self.queue,
                                     (self.slice_count * self.slice_height,),
                                     (self.slice_height,), self.slice_ptr_buf,
-                                    self.colidx_buf, self.val_buf, self.x_buf,
+                                    self.slice_col_buf, self.colidx_buf,
+                                    self.val_buf, self.x_buf,
                                     np.int32(self.slice_height), self.y_buf)
         t_end = time.perf_counter()
         return t_end - t_start
@@ -58,8 +62,8 @@ class BaseSELLSpMV:
 
 
 class SELLSpMV:
-    def __init__(self, n_row, slice_count,
-                 slice_ptr, colidx, val, x, slice_height):
+    def __init__(self, n_row, slice_count, slice_ptr,
+                 slice_col, colidx, val, x, slice_height):
         self.ctx = cl.create_some_context()
         self.queue = cl.CommandQueue(self.ctx)
 
@@ -90,6 +94,9 @@ class SELLSpMV:
         self.colidx_buf = cl.Buffer(self.ctx,
                                     mf.READ_ONLY | mf.COPY_HOST_PTR,
                                     hostbuf=colidx)
+        self.slice_col_buf = cl.Buffer(self.ctx,
+                                       mf.READ_ONLY | mf.COPY_HOST_PTR,
+                                       hostbuf=slice_col)
         self.val_buf = cl.Buffer(self.ctx,
                                  mf.READ_ONLY | mf.COPY_HOST_PTR,
                                  hostbuf=val)
@@ -106,11 +113,9 @@ class SELLSpMV:
             self.program.sell_spmv(self.queue,
                                    (self.slice_count * self.slice_height,),
                                    (self.slice_height,),
-                                   self.slice_ptr_buf, self.colidx_buf,
-                                   self.val_buf, self.x_buf,
-                                   np.int32(self.slice_height),
-                                   np.int32(self.slice_count), self.y_buf,
-                                   self.local_mem)
+                                   self.slice_ptr_buf, self.slice_col_buf,
+                                   self.colidx_buf, self.val_buf, self.x_buf,
+                                   np.int32(self.slice_height), self.y_buf)
         t_end = time.perf_counter()
         return t_end - t_start
 

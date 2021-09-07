@@ -1,20 +1,26 @@
 __kernel void sell_spmv(__global const int * restrict slice_ptr,
+                        __global const int * restrict slice_col,
                         __global const int * restrict colidx,
                         __global const float * restrict val,
                         __global const float * restrict x,
                         const int slice_height,
-                        const int slice_count,
-                        __global float * restrict y,
-                        __local float * lm)
+                        __global float * restrict y)
 {
-    int z = get_group_id(0);
-    int j, k;
-    float row_data;
-    for (j = 0; j < slice_height; j++) {
-        row_data = 0.0f;
-        for (k = slice_ptr[z] + j; k < slice_ptr[z + 1]; k += slice_height) {
-            row_data += x[colidx[k]] * val[k];
-        }
-        y[z * slice_height + j]  = row_data;
+    int z, i, j, k, idx;
+    float row_data = 0.0f;
+    i = get_group_id(0);
+    j = get_local_id(0);
+    __local int col_len;
+    __local int ptr;
+    if (j == 0){
+        col_len = slice_col[i];
+        ptr = slice_ptr[i];
     }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    for (k = 0; k < col_len; k++) {
+        idx = ptr + k * slice_height + j;
+        row_data += x[colidx[idx]] * val[idx];
+    }
+    z = get_global_id(0);
+    y[z] = row_data;
 }
