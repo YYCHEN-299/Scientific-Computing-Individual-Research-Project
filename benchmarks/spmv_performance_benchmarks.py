@@ -198,6 +198,7 @@ def opencl_performance_benchmark(sp_matrix, slice_height, t):
                          ell_colidx, ell_val, x, slice_height)
     sell_spmv.run()
     sell_y = sell_spmv.get_result()
+
     # print(csr_y)
     # print(sell_y[:n_row])
     # print(bsell_y[:n_row])
@@ -260,7 +261,7 @@ def cuda_performance_benchmark(sp_matrix, slice_height, t):
     bf_csr_colidx = cuda.to_device(csr_colidx)
     bf_csr_val = cuda.to_device(csr_val)
     bf_x = cuda.to_device(x)
-    bf_csr_y = cuda.to_device(csr_y)
+    bf_csr_y = cuda.device_array(n_row, dtype=np.float32)
 
     cuda_csr_spmv[nblocks, nthreads](bf_csr_rowptr, bf_csr_colidx,
                                      bf_csr_val, bf_x, bf_csr_y)
@@ -275,10 +276,10 @@ def cuda_performance_benchmark(sp_matrix, slice_height, t):
     # Sliced ELLPACK test
     nblocks = (slice_count,)  # global blocks
     nthreads = (slice_height,)  # threads per block, better be a multiple of 32
-    sell_y = np.zeros(slice_height * slice_count, dtype=np.float32)
+    # sell_y = np.zeros(slice_height * slice_count, dtype=np.float32)
 
     # CUDA buffer
-    bf_sell_y = cuda.to_device(sell_y)
+    bf_sell_y = cuda.device_array(slice_height * slice_count, dtype=np.float32)
     bf_ell_sliceptr = cuda.to_device(ell_sliceptr)
     bf_ell_colidx = cuda.to_device(ell_colidx)
     bf_ell_val = cuda.to_device(ell_val)

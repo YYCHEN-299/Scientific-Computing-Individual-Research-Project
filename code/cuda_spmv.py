@@ -1,3 +1,4 @@
+import numba
 from numba import cuda
 
 
@@ -16,8 +17,13 @@ def cuda_sliced_ellpack_spmv(slice_ptr, colidx, val, x, slice_height, y):
 
     slice_id = cuda.blockIdx.x
     slice_row_id = cuda.threadIdx.x
+    local_idx = cuda.shared.array(2, numba.int32)
     row_data = 0.0
-    for i in range(slice_ptr[slice_id] + slice_row_id, slice_ptr[slice_id + 1], slice_height):
+    if slice_row_id == 0:
+        local_idx[0] = slice_ptr[slice_id]
+        local_idx[1] = slice_ptr[slice_id + 1]
+    cuda.syncthreads()
+    for i in range(local_idx[0] + slice_row_id, local_idx[1], slice_height):
         row_data += x[colidx[i]] * val[i]
     y[slice_id * slice_height + slice_row_id] = row_data
 
