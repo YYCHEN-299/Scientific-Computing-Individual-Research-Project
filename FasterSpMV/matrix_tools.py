@@ -27,6 +27,12 @@ def random_spmatrix(n_row, n_col, per_nnz):
         Row wise max none zero elements number
     """
 
+    if n_row < 0 or n_col < 0:
+        raise ValueError('The number of rows or columns must > 0')
+
+    if per_nnz < 0 or per_nnz > 100:
+        raise ValueError('The percentage of nonzeros must between 0 - 100')
+
     sp_matrix = []
     nnz_count = 0
     row_max_nnz = 0
@@ -54,7 +60,7 @@ def spmatrix_to_csr(sp_matrix):
 
     Parameters
     ----------
-    sp_matrix : list or ndarrays
+    sp_matrix : list
         Sparse matrix without any storage format
 
     Returns
@@ -66,6 +72,9 @@ def spmatrix_to_csr(sp_matrix):
     val : ndarrays
         None zero elements value of CSR format
     """
+
+    if not isinstance(sp_matrix, list):
+        raise ValueError('The input matrix must be a list')
 
     n_row = len(sp_matrix)
     n_col = len(sp_matrix[0])
@@ -113,6 +122,9 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
     ell_val : ndarrays
         None zero elements value of CSR format
     """
+
+    if slice_height < 0:
+        raise ValueError('The slice height must > 0')
 
     N = len(rowptr) - 1  # number of rows
     slice_number = math.floor(N / slice_height)  # number of slices

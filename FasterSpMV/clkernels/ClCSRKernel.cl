@@ -7,7 +7,7 @@ __kernel void csr_spmv(__global const int * restrict rowptr,
     int i, k;
     i = get_global_id(0);
     float row_data = 0.0f;
-    for (k = rowptr[i]; k < rowptr[i + 1]; k += 1) {
+    for (k = rowptr[i]; k < rowptr[i + 1]; k++) {
         row_data += x[colidx[k]] * val[k];
     }
     y[i] = row_data;

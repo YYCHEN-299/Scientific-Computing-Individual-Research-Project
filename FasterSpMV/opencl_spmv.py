@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 import pyopencl as cl
 import time
@@ -12,7 +10,7 @@ class BaseSELLSpMV:
         self.queue = cl.CommandQueue(self.ctx)
 
         # read in the OpenCL source file as a string
-        f = open('code/clkernels/ClBaseSELLKernel.cl', 'r')
+        f = open('FasterSpMV/clkernels/ClBaseSELLKernel.cl', 'r')
         fstr = ''.join(f.readlines())
 
         # create the program
@@ -68,7 +66,7 @@ class SELLSpMV:
         self.queue = cl.CommandQueue(self.ctx)
 
         # read in the OpenCL source file as a string
-        f = open('code/clkernels/ClSELLKernel.cl', 'r')
+        f = open('FasterSpMV/clkernels/ClSELLKernel.cl', 'r')
         fstr = ''.join(f.readlines())
 
         # create the program
@@ -131,7 +129,7 @@ class CSRSpMV:
         self.queue = cl.CommandQueue(self.ctx)
 
         # read in the OpenCL source file as a string
-        f = open('code/clkernels/ClCSRKernel.cl', 'r')
+        f = open('FasterSpMV/clkernels/ClCSRKernel.cl', 'r')
         fstr = ''.join(f.readlines())
 
         # create the program

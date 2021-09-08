@@ -30,7 +30,7 @@ def numba_test(threads, matrix_data, slice_height):
 
 
 def opencl_test(matrix_data, slice_height):
-    os.environ['PYOPENCL_CTX'] = '2'
+    os.environ['PYOPENCL_CTX'] = '0'
     # os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 
     datasets = ['data/consph.mtx', 'data/cant.mtx',
@@ -47,4 +47,4 @@ if __name__ == "__main__":
     # matrix_data = mmread('data/cant.mtx').tocsr()
     # cuda_performance_benchmark(matrix_data, 64, 100)
     matrix_data = 0
-    opencl_test(matrix_data, 64)
+    opencl_test(matrix_data, 32)

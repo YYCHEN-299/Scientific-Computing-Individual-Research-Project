@@ -7,12 +7,12 @@ import numba
 from numba import cuda
 from scipy.sparse import csr_matrix
 
-from code.debug_tools import find_instr
-from code.matrix_tools import csr_to_sellpack, spmatrix_to_csr, random_spmatrix
-from code.numba_spmv import numba_csr_spmv, numba_sliced_ellpack_spmv
-from code.opencl_spmv import BaseSELLSpMV, SELLSpMV, CSRSpMV
-from code.cuda_spmv import cuda_csr_spmv
-from code.cuda_spmv import cuda_sliced_ellpack_spmv
+from FasterSpMV.debug_tools import find_instr
+from FasterSpMV.matrix_tools import csr_to_sellpack, spmatrix_to_csr, random_spmatrix
+from FasterSpMV.numba_spmv import numba_csr_spmv, numba_sliced_ellpack_spmv
+from FasterSpMV.opencl_spmv import BaseSELLSpMV, SELLSpMV, CSRSpMV
+from FasterSpMV.cuda_spmv import cuda_csr_spmv
+from FasterSpMV.cuda_spmv import cuda_sliced_ellpack_spmv
 
 
 def numba_random_data_test(n_row, n_col, per_nnz, slice_height, t):
