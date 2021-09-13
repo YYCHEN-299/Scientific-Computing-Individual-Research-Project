@@ -1,12 +1,20 @@
 import argparse
 import os
+import numpy as np
+import time
 
+from scipy.sparse.linalg import LinearOperator
+from scipy.sparse.linalg import gmres
+from scipy.sparse import csc_matrix, csr_matrix
 from numba import set_num_threads
 from scipy.io import mmread
 
 from benchmarks.spmv_performance_benchmarks import numba_performance_benchmark
 from benchmarks.spmv_performance_benchmarks import opencl_performance_benchmark
 from benchmarks.spmv_performance_benchmarks import cuda_performance_benchmark
+from benchmarks.spmv_performance_benchmarks import class_performance_benchmark
+from FasterSpMV.spmv import SpMVOperator
+from FasterSpMV.matrix_tools import *
 
 
 def main():
@@ -43,8 +51,45 @@ def opencl_test(matrix_data, slice_height):
         opencl_performance_benchmark(matrix_data, slice_height, 100)
 
 
+def class_test():
+    n_row = 1000
+    n_col = 1000
+    sp_matrix, nnz_count, row_max_nnz = random_spmatrix(n_row, n_col, 10)
+    csr_rowptr, csr_colidx, csr_val = spmatrix_to_csr(sp_matrix)
+    slice_height = 10
+
+    csrspmvop = SpMVOperator('cuda', 'csr', n_row, n_col,
+                             csr_rowptr, csr_colidx, csr_val, slice_height)
+    sellspmvop = SpMVOperator('cuda', 'sell', n_row, n_col,
+                              csr_rowptr, csr_colidx, csr_val, slice_height)
+    A = LinearOperator((n_row, n_col), matvec=csrspmvop.run)
+    K = LinearOperator((n_row, n_col), matvec=sellspmvop.run)
+    b = np.ones(n_col, dtype=np.float32)
+    zz = csr_matrix((csr_val, csr_colidx, csr_rowptr), shape=(n_row, n_col))
+    Z = zz.tocsc().astype(np.float32)
+
+    t_start = time.perf_counter()
+    x, exitCode = gmres(Z, b)
+    t_end = time.perf_counter()
+    print('e code:', exitCode, ', t:', (t_end - t_start))
+
+    t_start = time.perf_counter()
+    x, exitCode = gmres(A, b)
+    t_end = time.perf_counter()
+    print('e code:', exitCode, ', t:', (t_end - t_start))
+
+    t_start = time.perf_counter()
+    x, exitCode = gmres(K, b)
+    t_end = time.perf_counter()
+    print('e code:', exitCode, ', t:', (t_end - t_start))
+
+
 if __name__ == "__main__":
     # matrix_data = mmread('data/cant.mtx').tocsr()
     # cuda_performance_benchmark(matrix_data, 64, 100)
-    matrix_data = 0
-    opencl_test(matrix_data, 32)
+    # matrix_data = 0
+    # opencl_test(matrix_data, 32)
+    os.environ['PYOPENCL_CTX'] = '2'
+    matrix_data = mmread('data/consph.mtx').tocsr()
+    class_performance_benchmark(matrix_data, 32, 100)
+    cuda_performance_benchmark(matrix_data, 32, 100)

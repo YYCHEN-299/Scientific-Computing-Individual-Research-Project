@@ -1,11 +1,10 @@
 import numpy as np
 import pyopencl as cl
-import time
 
 
 class BaseSELLSpMV:
     def __init__(self, n_row, slice_count, slice_ptr,
-                 slice_col, colidx, val, x, slice_height):
+                 slice_col, colidx, val, slice_height):
         self.ctx = cl.create_some_context()
         self.queue = cl.CommandQueue(self.ctx)
 
@@ -34,26 +33,20 @@ class BaseSELLSpMV:
         self.val_buf = cl.Buffer(self.ctx,
                                  mf.READ_ONLY | mf.COPY_HOST_PTR,
                                  hostbuf=val)
-        self.x_buf = cl.Buffer(self.ctx,
-                               mf.READ_ONLY | mf.COPY_HOST_PTR,
-                               hostbuf=x)
+
         self.y_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, self._y.nbytes)
         lm = np.zeros(slice_height, dtype=np.int32)
         self.local_mem = cl.LocalMemory(lm.nbytes)
 
-    def run(self, n=1):
-        t_start = time.perf_counter()
-        for i in range(n):
-            self.program.bsell_spmv(self.queue,
-                                    (self.slice_count * self.slice_height,),
-                                    (self.slice_height,), self.slice_ptr_buf,
-                                    self.slice_col_buf, self.colidx_buf,
-                                    self.val_buf, self.x_buf,
-                                    np.int32(self.slice_height), self.y_buf)
-        t_end = time.perf_counter()
-        return t_end - t_start
-
-    def get_result(self):
+    def run(self, x):
+        mf = cl.mem_flags
+        x_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=x)
+        self.program.bsell_spmv(self.queue,
+                                (self.slice_count * self.slice_height,),
+                                (self.slice_height,), self.slice_ptr_buf,
+                                self.slice_col_buf, self.colidx_buf,
+                                self.val_buf, x_buf,
+                                np.int32(self.slice_height), self.y_buf)
         bsell_y = np.empty_like(self._y)
         cl.enqueue_copy(self.queue, bsell_y, self.y_buf)
         return bsell_y
@@ -61,7 +54,7 @@ class BaseSELLSpMV:
 
 class SELLSpMV:
     def __init__(self, n_row, slice_count, slice_ptr,
-                 slice_col, colidx, val, x, slice_height):
+                 slice_col, colidx, val, slice_height):
         self.ctx = cl.create_some_context()
         self.queue = cl.CommandQueue(self.ctx)
 
@@ -98,33 +91,27 @@ class SELLSpMV:
         self.val_buf = cl.Buffer(self.ctx,
                                  mf.READ_ONLY | mf.COPY_HOST_PTR,
                                  hostbuf=val)
-        self.x_buf = cl.Buffer(self.ctx,
-                               mf.READ_ONLY | mf.COPY_HOST_PTR,
-                               hostbuf=x)
+
         self.y_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, self._y.nbytes)
         lm = np.zeros(slice_height, dtype=np.int32)
         self.local_mem = cl.LocalMemory(lm.nbytes)
 
-    def run(self, n=1):
-        t_start = time.perf_counter()
-        for i in range(n):
-            self.program.sell_spmv(self.queue,
-                                   (self.slice_count * self.slice_height,),
-                                   (self.slice_height,),
-                                   self.slice_ptr_buf, self.slice_col_buf,
-                                   self.colidx_buf, self.val_buf, self.x_buf,
-                                   np.int32(self.slice_height), self.y_buf)
-        t_end = time.perf_counter()
-        return t_end - t_start
-
-    def get_result(self):
+    def run(self, x):
+        mf = cl.mem_flags
+        x_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=x)
+        self.program.sell_spmv(self.queue,
+                               (self.slice_count * self.slice_height,),
+                               (self.slice_height,),
+                               self.slice_ptr_buf, self.slice_col_buf,
+                               self.colidx_buf, self.val_buf, x_buf,
+                               np.int32(self.slice_height), self.y_buf)
         sell_y = np.empty_like(self._y)
         cl.enqueue_copy(self.queue, sell_y, self.y_buf)
         return sell_y
 
 
 class CSRSpMV:
-    def __init__(self, num_row, rowptr, colidx, val, x):
+    def __init__(self, num_row, rowptr, colidx, val):
         self.ctx = cl.create_some_context()
         self.queue = cl.CommandQueue(self.ctx)
 
@@ -148,21 +135,15 @@ class CSRSpMV:
         self.val_buf = cl.Buffer(self.ctx,
                                  mf.READ_ONLY | mf.COPY_HOST_PTR,
                                  hostbuf=val)
-        self.x_buf = cl.Buffer(self.ctx,
-                               mf.READ_ONLY | mf.COPY_HOST_PTR,
-                               hostbuf=x)
+
         self.y_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, self._y.nbytes)
 
-    def run(self, n=1):
-        t_start = time.perf_counter()
-        for i in range(n):
-            self.program.csr_spmv(self.queue, (self.num_row,), None,
-                                  self.rowptr_buf, self.colidx_buf,
-                                  self.val_buf, self.x_buf, self.y_buf)
-        t_end = time.perf_counter()
-        return t_end - t_start
-
-    def get_result(self):
+    def run(self, x):
+        mf = cl.mem_flags
+        x_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=x)
+        self.program.csr_spmv(self.queue, (self.num_row,), None,
+                              self.rowptr_buf, self.colidx_buf,
+                              self.val_buf, x_buf, self.y_buf)
         csr_y = np.empty_like(self._y)
         cl.enqueue_copy(self.queue, csr_y, self.y_buf)
         return csr_y

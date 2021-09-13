@@ -96,12 +96,14 @@ def spmatrix_to_csr(sp_matrix):
     return np.array(rowptr), np.array(colidx), np.array(val, dtype=np.float32)
 
 
-def csr_to_sellpack(rowptr, colidx, val, slice_height):
+def csr_to_sellpack(n_row, rowptr, colidx, val, slice_height):
     """
     This fucntion convert CSR format to Sliced ELLPACK format.
 
     Parameters
     ----------
+    n_row : int
+        Number of rows
     rowptr : ndarrays
         Row pointer of CSR format
     colidx : ndarrays
@@ -113,6 +115,8 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
 
     Returns
     -------
+    slice_count : int
+        Number of slices
     ell_colidx : ndarrays
         Column index of Sliced ELLPACK format
     ell_sliceptr : ndarrays
@@ -189,5 +193,6 @@ def csr_to_sellpack(rowptr, colidx, val, slice_height):
                         ell_val.append(0)  # padded zero
     ell_sliceptr.append(nnz_count)
 
-    return np.array(ell_colidx), np.array(ell_sliceptr), \
+    slice_count = math.ceil(n_row / slice_height)
+    return slice_count, np.array(ell_colidx), np.array(ell_sliceptr), \
         np.array(ell_slicecol), np.array(ell_val, dtype=np.float32)
