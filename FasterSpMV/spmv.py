@@ -25,6 +25,7 @@ class SpMVOperator:
                 self._ocl_csr = CSRSpMV(n_row, csr_rowptr, csr_colidx, csr_val)
                 self.kernel = self._opencl_csr
             elif method == 'numba':
+                self.y = np.zeros(n_row, dtype=np.float32)
                 self.kernel = self._numba_csr
             elif method == 'cuda':
                 self.nblocks = (n_row,)  # global blocks
@@ -44,7 +45,6 @@ class SpMVOperator:
             self.ell_sliceptr = ell_sliceptr
             self.slice_col = slice_col
             self.ell_val = ell_val
-
             if method == 'opencl':
                 self._ocl_sell = BaseSELLSpMV(n_row, slice_count,
                                               ell_sliceptr,
@@ -52,6 +52,8 @@ class SpMVOperator:
                                               ell_val, slice_height)
                 self.kernel = self._opencl_sell
             elif method == 'numba':
+                self.y = np.zeros(slice_count *
+                                  slice_height, dtype=np.float32)
                 self.kernel = self._numba_sell
             elif method == 'cuda':
                 self.nblocks = (slice_count,)  # global blocks
@@ -67,23 +69,21 @@ class SpMVOperator:
 
         # first run kernel
         x = np.ones(n_col, dtype=np.float32)
-        perf_start = time.perf_counter()
         self.kernel(x)
-        perf_end = time.perf_counter()
-        print("kernel perf count: ", (perf_end - perf_start))
 
     def run(self, v):
         y = self.kernel(v)
         return y
 
     def _numba_csr(self, v):
-        return numba_csr_spmv(self.n_row, self.csr_rowptr,
+        return numba_csr_spmv(self.y, self.n_row, self.csr_rowptr,
                               self.csr_colidx, self.csr_val, v)
 
     def _numba_sell(self, v):
-        return numba_sliced_ellpack_spmv(self.slice_count,
-                                         self.ell_sliceptr, self.ell_colidx,
-                                         self.ell_val, v, self.slice_height)
+        return numba_sliced_ellpack_spmv(self.y, self.slice_count,
+                                         self.ell_sliceptr, self.slice_col,
+                                         self.ell_colidx, self.ell_val,
+                                         v, self.slice_height)
 
     def _opencl_csr(self, v):
         return self._ocl_csr.run(v)

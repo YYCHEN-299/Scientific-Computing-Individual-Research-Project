@@ -6,7 +6,7 @@ import time
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import gmres
 from scipy.sparse import csc_matrix, csr_matrix
-from numba import set_num_threads
+from numba import set_num_threads, threading_layer
 from scipy.io import mmread
 
 from benchmarks.spmv_performance_benchmarks import numba_performance_benchmark
@@ -34,7 +34,7 @@ def main():
 
 def numba_test(threads, matrix_data, slice_height):
     set_num_threads(threads)
-    numba_performance_benchmark(matrix_data, slice_height, 100)
+    numba_performance_benchmark(matrix_data, slice_height, 1000)
 
 
 def opencl_test(matrix_data, slice_height):
@@ -52,18 +52,24 @@ def opencl_test(matrix_data, slice_height):
 
 
 def class_test():
-    n_row = 1000
-    n_col = 1000
-    sp_matrix, nnz_count, row_max_nnz = random_spmatrix(n_row, n_col, 10)
+    n_row = 2000
+    n_col = 2000
+    sp_matrix, nnz_count, row_max_nnz = random_spmatrix(n_row, n_col, 0)
     csr_rowptr, csr_colidx, csr_val = spmatrix_to_csr(sp_matrix)
-    slice_height = 10
+    slice_height = 4
 
-    csrspmvop = SpMVOperator('cuda', 'csr', n_row, n_col,
+    csrspmvop = SpMVOperator('numba', 'csr', n_row, n_col,
                              csr_rowptr, csr_colidx, csr_val, slice_height)
-    sellspmvop = SpMVOperator('cuda', 'sell', n_row, n_col,
+    sellspmvop = SpMVOperator('numba', 'sell', n_row, n_col,
                               csr_rowptr, csr_colidx, csr_val, slice_height)
+    sellspmvop1 = SpMVOperator('numba', 'sell', n_row, n_col,
+                               csr_rowptr, csr_colidx, csr_val, 2)
+    sellspmvop2 = SpMVOperator('numba', 'sell', n_row, n_col,
+                               csr_rowptr, csr_colidx, csr_val, 8)
     A = LinearOperator((n_row, n_col), matvec=csrspmvop.run)
     K = LinearOperator((n_row, n_col), matvec=sellspmvop.run)
+    K1 = LinearOperator((n_row, n_col), matvec=sellspmvop1.run)
+    K2 = LinearOperator((n_row, n_col), matvec=sellspmvop2.run)
     b = np.ones(n_col, dtype=np.float32)
     zz = csr_matrix((csr_val, csr_colidx, csr_rowptr), shape=(n_row, n_col))
     Z = zz.tocsc().astype(np.float32)
@@ -71,17 +77,17 @@ def class_test():
     t_start = time.perf_counter()
     x, exitCode = gmres(Z, b)
     t_end = time.perf_counter()
-    print('e code:', exitCode, ', t:', (t_end - t_start))
+    print('normal e code:', exitCode, ', t:', (t_end - t_start))
 
     t_start = time.perf_counter()
     x, exitCode = gmres(A, b)
     t_end = time.perf_counter()
-    print('e code:', exitCode, ', t:', (t_end - t_start))
+    print('csr e code:', exitCode, ', t:', (t_end - t_start))
 
     t_start = time.perf_counter()
     x, exitCode = gmres(K, b)
     t_end = time.perf_counter()
-    print('e code:', exitCode, ', t:', (t_end - t_start))
+    print('sell 4 e code:', exitCode, ', t:', (t_end - t_start))
 
 
 if __name__ == "__main__":
@@ -89,7 +95,11 @@ if __name__ == "__main__":
     # cuda_performance_benchmark(matrix_data, 64, 100)
     # matrix_data = 0
     # opencl_test(matrix_data, 32)
-    os.environ['PYOPENCL_CTX'] = '2'
+    # os.environ['PYOPENCL_CTX'] = '2'
+    # matrix_data = mmread('data/consph.mtx').tocsr()
+    # class_performance_benchmark(matrix_data, 32, 100)
+    # cuda_performance_benchmark(matrix_data, 32, 100)
+    # os.environ['PYOPENCL_CTX'] = '2'
+    # class_test()
     matrix_data = mmread('data/consph.mtx').tocsr()
-    class_performance_benchmark(matrix_data, 32, 100)
-    cuda_performance_benchmark(matrix_data, 32, 100)
+    numba_test(4, matrix_data, 4)

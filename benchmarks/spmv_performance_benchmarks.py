@@ -9,7 +9,7 @@ from scipy.sparse import csr_matrix
 
 from FasterSpMV.debug_tools import find_instr
 from FasterSpMV.matrix_tools import *
-from FasterSpMV.numba_spmv import numba_csr_spmv, numba_sliced_ellpack_spmv
+from FasterSpMV.numba_spmv import numba_csr_spmv, numba_sliced_ellpack_spmv, numba_sell_spmv
 from FasterSpMV.opencl_spmv import BaseSELLSpMV, SELLSpMV, CSRSpMV
 from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_sliced_ellpack_spmv
 from FasterSpMV.spmv import SpMVOperator
@@ -45,11 +45,12 @@ def numba_random_data_test(n_row, n_col, per_nnz, slice_height, t):
     y_exact = sp_A.dot(x)  # SciPy SpMV
 
     # performance test
-    csr_y = numba_csr_spmv(n_row, csr_rowptr, csr_colidx, csr_val, x)
+    y = np.zeros(n_row, dtype=np.float32)
+    csr_y = numba_csr_spmv(y, n_row, csr_rowptr, csr_colidx, csr_val, x)
     # start test
     csr_start = time.perf_counter()
     for i in range(t):
-        numba_csr_spmv(n_row, csr_rowptr, csr_colidx, csr_val, x)
+        numba_csr_spmv(y, n_row, csr_rowptr, csr_colidx, csr_val, x)
     csr_end = time.perf_counter()
     print("CSR format runtime: ", (csr_end - csr_start) / t)
 
@@ -58,12 +59,13 @@ def numba_random_data_test(n_row, n_col, per_nnz, slice_height, t):
     print(f"CSR Error: {round(csr_rel_error, 5)}.")
 
     # performance test
-    ell_y = numba_sliced_ellpack_spmv(slice_count, ell_sliceptr,
+    y = np.zeros(slice_count * slice_height, dtype=np.float32)
+    ell_y = numba_sliced_ellpack_spmv(y, slice_count, ell_sliceptr,
                                       ell_colidx, ell_val, x, slice_height)
     # start test
     ell_start = time.perf_counter()
     for i in range(t):
-        numba_sliced_ellpack_spmv(slice_count, ell_sliceptr,
+        numba_sliced_ellpack_spmv(y, slice_count, ell_sliceptr,
                                   ell_colidx, ell_val, x, slice_height)
     ell_end = time.perf_counter()
     print("Sliced ELLPACK format runtime:", (ell_end - ell_start) / t)
@@ -88,8 +90,8 @@ def numba_performance_benchmark(sp_matrix, slice_height, t):
     print("Sparse matrix row: ", n_row, ", column: ", n_col)
 
     # convert sparse matrix to CSR format
-    csr_rowptr = sp_matrix.indptr
-    csr_colidx = sp_matrix.indices
+    csr_rowptr = sp_matrix.indptr.astype(np.uint32)
+    csr_colidx = sp_matrix.indices.astype(np.uint32)
     csr_val = sp_matrix.data.astype(np.float32)
 
     # convert CSR to Sliced ELLPACK format
@@ -105,11 +107,13 @@ def numba_performance_benchmark(sp_matrix, slice_height, t):
     y_exact = sp_A.dot(x)  # SciPy SpMV
 
     # CSR test
-    csr_y = numba_csr_spmv(n_row, csr_rowptr, csr_colidx, csr_val, x)
+    n_row = np.uint32(n_row)
+    csr_y = np.zeros(n_row, dtype=np.float32)
+    numba_csr_spmv(csr_y, n_row, csr_rowptr, csr_colidx, csr_val, x)
     # start test
     csr_perf_start = time.perf_counter()
     for i in range(t):
-        numba_csr_spmv(n_row, csr_rowptr, csr_colidx, csr_val, x)
+        numba_csr_spmv(csr_y, n_row, csr_rowptr, csr_colidx, csr_val, x)
     csr_perf_end = time.perf_counter()
     print("CSR perf count: ", (csr_perf_end - csr_perf_start) / t)
 
@@ -118,25 +122,49 @@ def numba_performance_benchmark(sp_matrix, slice_height, t):
     print(f"CSR Error: {round(csr_rel_error, 5)}.")
 
     # Sliced ELLPACK test
-    sell_y = numba_sliced_ellpack_spmv(slice_count, ell_sliceptr,
-                                       ell_colidx, ell_val, x, slice_height)
+    slice_height = np.uint32(slice_height)
+    sell_y = np.zeros(slice_count * slice_height, dtype=np.float32)
+    numba_sliced_ellpack_spmv(sell_y, slice_count, ell_sliceptr,
+                              ell_colidx, ell_val, x, slice_height)
     # start test
     ell_perf_start = time.perf_counter()
     for i in range(t):
-        numba_sliced_ellpack_spmv(slice_count, ell_sliceptr,
+        numba_sliced_ellpack_spmv(sell_y, slice_count, ell_sliceptr,
                                   ell_colidx, ell_val, x, slice_height)
     ell_perf_end = time.perf_counter()
     print("SELL perf count: ", (ell_perf_end - ell_perf_start) / t)
+
+    # Sliced ELLPACK test
+    bsell_y = np.zeros(slice_count * slice_height, dtype=np.float32)
+    numba_sell_spmv(slice_count, ell_sliceptr,
+                    ell_colidx, ell_val, x, bsell_y)
+    # start test
+    bell_perf_start = time.perf_counter()
+    for i in range(t):
+        numba_sell_spmv(slice_count, ell_sliceptr,
+                        ell_colidx, ell_val, x, bsell_y)
+    bell_perf_end = time.perf_counter()
+    print("BSELL perf count: ", (bell_perf_end - bell_perf_start) / t)
 
     # check error
     ell_rel_error = np.linalg.norm(
         sell_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
     print(f"SELL Error: {round(ell_rel_error, 5)}.")
 
+    ell_rel_error = np.linalg.norm(
+        bsell_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
+    print(f"BSELL Error: {round(ell_rel_error, 5)}.")
+
     # print(sliced_ellpack_spmv.parallel_diagnostics(level=4))
     # print(sliced_ellpack_spmv.inspect_asm()
     #       [list(sliced_ellpack_spmv.inspect_asm().keys())[0]])
     find_instr(numba_sliced_ellpack_spmv, keyword='mul')
+    print('---')
+    find_instr(numba_csr_spmv, keyword='mul')
+    print('---')
+    print(numba_sliced_ellpack_spmv.signatures)
+    print('---')
+    print(numba_csr_spmv.signatures)
 
 
 def opencl_performance_benchmark(sp_matrix, slice_height, t):

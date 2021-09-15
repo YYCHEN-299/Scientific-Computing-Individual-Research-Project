@@ -93,7 +93,8 @@ def spmatrix_to_csr(sp_matrix):
                 val.append(sp_matrix[i][j])
     rowptr.append(nnz_count)
 
-    return np.array(rowptr), np.array(colidx), np.array(val, dtype=np.float32)
+    return np.array(rowptr, dtype=np.uint32), \
+        np.array(colidx, dtype=np.uint32), np.array(val, dtype=np.float32)
 
 
 def csr_to_sellpack(n_row, rowptr, colidx, val, slice_height):
@@ -194,5 +195,8 @@ def csr_to_sellpack(n_row, rowptr, colidx, val, slice_height):
     ell_sliceptr.append(nnz_count)
 
     slice_count = math.ceil(n_row / slice_height)
-    return slice_count, np.array(ell_colidx), np.array(ell_sliceptr), \
-        np.array(ell_slicecol), np.array(ell_val, dtype=np.float32)
+    return np.uint32(slice_count), \
+        np.array(ell_colidx, dtype=np.uint32), \
+        np.array(ell_sliceptr, dtype=np.uint32), \
+        np.array(ell_slicecol, dtype=np.uint32), \
+        np.array(ell_val, dtype=np.float32)
