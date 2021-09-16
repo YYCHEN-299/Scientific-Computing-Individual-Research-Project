@@ -102,4 +102,4 @@ if __name__ == "__main__":
     # os.environ['PYOPENCL_CTX'] = '2'
     # class_test()
     matrix_data = mmread('data/consph.mtx').tocsr()
-    numba_test(4, matrix_data, 4)
+    numba_test(8, matrix_data, 4)

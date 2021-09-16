@@ -38,10 +38,8 @@ def numba_csr_spmv(y, num_row, rowptr, colidx, val, x):
     """
 
     for i in prange(num_row):
-        now_ptr = rowptr[i]
-        next_ptr = rowptr[i + 1]
         row_data = 0.0
-        for j in range(now_ptr, next_ptr):
+        for j in range(rowptr[i], rowptr[i + 1]):
             row_data += val[j] * x[colidx[j]]
         y[i] = row_data
 
@@ -84,11 +82,20 @@ def numba_sliced_ellpack_spmv(y, slice_count, slice_ptr,
     for s in prange(slice_count):
         ptr_start = slice_ptr[s]
         ptr_end = slice_ptr[s + 1]
-        for r in range(slice_height):
-            row_data = 0.0
-            for i in range(ptr_start + r, ptr_end, slice_height):
-                row_data += x[colidx[i]] * val[i]
-            y[s * slice_height + r] = row_data
+        row_idx = np.uint32(s * 4)
+        row_data0 = 0.0
+        row_data1 = 0.0
+        row_data2 = 0.0
+        row_data3 = 0.0
+        for i in range(ptr_start, ptr_end, 4):
+            row_data0 += x[colidx[i]] * val[i]
+            row_data1 += x[colidx[i + 1]] * val[i + 1]
+            row_data2 += x[colidx[i + 2]] * val[i + 2]
+            row_data3 += x[colidx[i + 3]] * val[i + 3]
+        y[row_idx] = row_data0
+        y[row_idx + 1] = row_data1
+        y[row_idx + 2] = row_data2
+        y[row_idx + 3] = row_data3
 
 
 @jit(nopython=True, parallel=True, nogil=True, fastmath=True)
@@ -97,15 +104,16 @@ def numba_sell_spmv(slice_count, slice_ptr, colidx, val, x, y):
     for s in prange(slice_count):
         ptr_start = slice_ptr[s]
         ptr_end = slice_ptr[s + 1]
+        row_idx = np.uint32(s * 4)
         for r in range(4):
             row_data = 0.0
             for i in range(ptr_start + r, ptr_end, 4):
                 row_data += x[colidx[i]] * val[i]
-            y[s * 4 + r] = row_data
+            y[row_idx + r] = row_data
 
 
 @jit(nopython=True, parallel=True, nogil=True, fastmath=True)
-def numba_sell_spmv1(y, slice_count, slice_ptr, colidx, val, x, slice_height):
+def numba_sell_spmv_mark1(y, slice_count, slice_ptr, colidx, val, x, slice_height):
 
     for s in prange(slice_count):
         now_ptr = slice_ptr[s]

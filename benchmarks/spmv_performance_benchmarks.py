@@ -49,7 +49,7 @@ def numba_random_data_test(n_row, n_col, per_nnz, slice_height, t):
     csr_y = numba_csr_spmv(y, n_row, csr_rowptr, csr_colidx, csr_val, x)
     # start test
     csr_start = time.perf_counter()
-    for i in range(t):
+    for _ in range(t):
         numba_csr_spmv(y, n_row, csr_rowptr, csr_colidx, csr_val, x)
     csr_end = time.perf_counter()
     print("CSR format runtime: ", (csr_end - csr_start) / t)
@@ -64,7 +64,7 @@ def numba_random_data_test(n_row, n_col, per_nnz, slice_height, t):
                                       ell_colidx, ell_val, x, slice_height)
     # start test
     ell_start = time.perf_counter()
-    for i in range(t):
+    for _ in range(t):
         numba_sliced_ellpack_spmv(y, slice_count, ell_sliceptr,
                                   ell_colidx, ell_val, x, slice_height)
     ell_end = time.perf_counter()
@@ -112,7 +112,7 @@ def numba_performance_benchmark(sp_matrix, slice_height, t):
     numba_csr_spmv(csr_y, n_row, csr_rowptr, csr_colidx, csr_val, x)
     # start test
     csr_perf_start = time.perf_counter()
-    for i in range(t):
+    for _ in range(t):
         numba_csr_spmv(csr_y, n_row, csr_rowptr, csr_colidx, csr_val, x)
     csr_perf_end = time.perf_counter()
     print("CSR perf count: ", (csr_perf_end - csr_perf_start) / t)
@@ -128,7 +128,7 @@ def numba_performance_benchmark(sp_matrix, slice_height, t):
                               ell_colidx, ell_val, x, slice_height)
     # start test
     ell_perf_start = time.perf_counter()
-    for i in range(t):
+    for _ in range(t):
         numba_sliced_ellpack_spmv(sell_y, slice_count, ell_sliceptr,
                                   ell_colidx, ell_val, x, slice_height)
     ell_perf_end = time.perf_counter()
@@ -140,7 +140,7 @@ def numba_performance_benchmark(sp_matrix, slice_height, t):
                     ell_colidx, ell_val, x, bsell_y)
     # start test
     bell_perf_start = time.perf_counter()
-    for i in range(t):
+    for _ in range(t):
         numba_sell_spmv(slice_count, ell_sliceptr,
                         ell_colidx, ell_val, x, bsell_y)
     bell_perf_end = time.perf_counter()
@@ -200,7 +200,7 @@ def opencl_performance_benchmark(sp_matrix, slice_height, t):
     csr_y = csr_spmv.run(x)
 
     csr_perf_start = time.perf_counter()
-    for i in range(t):
+    for _ in range(t):
         csr_spmv.run(x)
     csr_perf_end = time.perf_counter()
     print("CSR perf time: ", (csr_perf_end - csr_perf_start) / t)
@@ -211,7 +211,7 @@ def opencl_performance_benchmark(sp_matrix, slice_height, t):
                                   ell_colidx, ell_val, slice_height)
     bsell_y = base_sell_spmv.run(x)
     bsell_perf_start = time.perf_counter()
-    for i in range(t):
+    for _ in range(t):
         base_sell_spmv.run(x)
     bsell_perf_end = time.perf_counter()
     print("Base SELL perf time: ", (bsell_perf_end - bsell_perf_start) / t)
@@ -227,7 +227,7 @@ def opencl_performance_benchmark(sp_matrix, slice_height, t):
     # print(y_exact)
 
     sell_perf_start = time.perf_counter()
-    for i in range(t):
+    for _ in range(t):
         sell_spmv.run(x)
     sell_perf_end = time.perf_counter()
     print("SELL perf time: ", (sell_perf_end - sell_perf_start) / t)
@@ -288,7 +288,7 @@ def cuda_performance_benchmark(sp_matrix, slice_height, t):
     cuda_csr_spmv[nblocks, nthreads](bf_csr_rowptr, bf_csr_colidx,
                                      bf_csr_val, bf_x, bf_csr_y)
     csr_perf_start = time.perf_counter()
-    for i in range(t):
+    for _ in range(t):
         bf_x = cuda.to_device(x)
         cuda_csr_spmv[nblocks, nthreads](bf_csr_rowptr, bf_csr_colidx,
                                          bf_csr_val, bf_x, bf_csr_y)
@@ -318,7 +318,7 @@ def cuda_performance_benchmark(sp_matrix, slice_height, t):
 
     # calculate running time
     ell_perf_start = time.perf_counter()
-    for i in range(t):
+    for _ in range(t):
         bf_x = cuda.to_device(x)
         cuda_sliced_ellpack_spmv[nblocks, nthreads](bf_ell_sliceptr,
                                                     bf_ell_colidx,
