@@ -13,6 +13,7 @@ from benchmarks.spmv_performance_benchmarks import numba_performance_benchmark
 from benchmarks.spmv_performance_benchmarks import opencl_performance_benchmark
 from benchmarks.spmv_performance_benchmarks import cuda_performance_benchmark
 from benchmarks.spmv_performance_benchmarks import class_performance_benchmark
+from benchmarks.spmv_performance_benchmarks import test_tool
 from FasterSpMV.spmv import SpMVOperator
 from FasterSpMV.matrix_tools import *
 
@@ -101,5 +102,6 @@ if __name__ == "__main__":
     # cuda_performance_benchmark(matrix_data, 32, 100)
     # os.environ['PYOPENCL_CTX'] = '2'
     # class_test()
-    matrix_data = mmread('data/consph.mtx').tocsr()
-    numba_test(8, matrix_data, 4)
+    # matrix_data = mmread('data/consph.mtx').tocsr()
+    # numba_test(8, matrix_data, 4)
+    test_tool()

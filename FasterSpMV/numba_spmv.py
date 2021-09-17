@@ -7,7 +7,7 @@ from numba import jit, prange, guvectorize
 # llvm.set_option('', '--debug-only=loop-vectorize')
 
 
-@jit(nopython=True, parallel=True, nogil=True, fastmath=True)
+@jit(nopython=True, parallel=True, fastmath=True)
 def numba_csr_spmv(y, num_row, rowptr, colidx, val, x):
     """
     This function is multi thread CSR format based SpMV (y=Ax).
@@ -44,7 +44,7 @@ def numba_csr_spmv(y, num_row, rowptr, colidx, val, x):
         y[i] = row_data
 
 
-@jit(nopython=True, parallel=True, nogil=True, fastmath=True)
+@jit(nopython=True, parallel=True, fastmath=True)
 def numba_sliced_ellpack_spmv(y, slice_count, slice_ptr,
                               colidx, val, x, slice_height):
     """
@@ -82,20 +82,12 @@ def numba_sliced_ellpack_spmv(y, slice_count, slice_ptr,
     for s in prange(slice_count):
         ptr_start = slice_ptr[s]
         ptr_end = slice_ptr[s + 1]
-        row_idx = np.uint32(s * 4)
-        row_data0 = 0.0
-        row_data1 = 0.0
-        row_data2 = 0.0
-        row_data3 = 0.0
-        for i in range(ptr_start, ptr_end, 4):
-            row_data0 += x[colidx[i]] * val[i]
-            row_data1 += x[colidx[i + 1]] * val[i + 1]
-            row_data2 += x[colidx[i + 2]] * val[i + 2]
-            row_data3 += x[colidx[i + 3]] * val[i + 3]
-        y[row_idx] = row_data0
-        y[row_idx + 1] = row_data1
-        y[row_idx + 2] = row_data2
-        y[row_idx + 3] = row_data3
+        row_data = y[s, :]
+        for k in range(slice_height):
+            row = 0.0
+            for i in range(ptr_start + k, ptr_end, slice_height):
+                row += x[colidx[i]] * val[i]
+            row_data[k] = row
 
 
 @jit(nopython=True, parallel=True, nogil=True, fastmath=True)
@@ -151,3 +143,13 @@ def numba_sliced_ellpack_spmv_mark2(slice_count, slice_ptr,
         y[s * slice_height + 3] = inner_y4
 
     return y
+
+
+# @jit(nopython=True, parallel=True, nogil=True, fastmath=True)
+def numba_sliced_ellpack_spmv_h4(y, slice_count, slice_col, colidx, val, x):
+
+    for s in range(slice_count):
+        row_data = np.zeros(4, dtype=np.float32)
+        for i in range(slice_col[s], slice_col[s + 1]):
+            row_data = x[colidx[i]] * val[i]
+        y[s, :] = row_data[:]
