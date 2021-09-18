@@ -401,7 +401,11 @@ def class_performance_benchmark(sp_matrix, slice_height, t):
     print(f"SELL Error: {round(ell_rel_error, 5)}.")
 
 
-def test_tool(sp_matrix):
+def test_numba_explicit_parallel(sp_matrix):
+    """
+    Test OpenCL SpMV performance
+    """
+
     slice_height = 4
     t = 100
     n_row, n_col = sp_matrix.shape
@@ -447,19 +451,20 @@ def test_tool(sp_matrix):
     print(f"CSR Error: {round(csr_rel_error, 5)}.")
 
     # performance test
+    slice_height = np.uint64(4)
     ell_y = np.empty((slice_count, 4), dtype=np.float32)
-    numba_sliced_ellpack_spmv_h4(ell_y, slice_count, ell_slicecol,
-                                 ell_colidx, ell_val, x)
+    numba_sell_spmv_h4(ell_y, slice_count,
+                       ell_slicecol, ell_colidx, ell_val, x)
     # start test
     ell_start = time.perf_counter()
     for _ in range(t):
-        numba_sliced_ellpack_spmv_h4(ell_y, slice_count, ell_slicecol,
-                                     ell_colidx, ell_val, x)
+        numba_sell_spmv_h4(ell_y, slice_count,
+                           ell_slicecol, ell_colidx, ell_val, x)
     ell_end = time.perf_counter()
     print("Sliced ELLPACK format runtime:", (ell_end - ell_start) / t)
 
     print(min(repeat(
-        lambda: numba_sliced_ellpack_spmv_h4(
+        lambda: numba_sell_spmv_h4(
             ell_y, slice_count, ell_slicecol, ell_colidx, ell_val, x),
         number=50, repeat=5)))
 
@@ -480,7 +485,7 @@ def test_tool(sp_matrix):
                                 ell_colidx1, ell_val1, x, bsell_y),
         number=50, repeat=5)))
 
-    ell_y = ell_y.reshape(-1, )
+    ell_y = ell_y.reshape(-1,)
     ell_rel_error = np.linalg.norm(
         ell_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
     print(f"SELL Error: {round(ell_rel_error, 5)}.")
@@ -488,5 +493,6 @@ def test_tool(sp_matrix):
     # print(sliced_ellpack_spmv.parallel_diagnostics(level=4))
     # print(sliced_ellpack_spmv.inspect_asm()
     #       [list(sliced_ellpack_spmv.inspect_asm().keys())[0]])
-    # find_instr(numba_sliced_ellpack_spmv_h4, key='mul')
-    # print(numba_sliced_ellpack_spmv_h4.signatures)
+    find_instr(numba_sell_spmv_h4, key='mul')
+
+
