@@ -104,4 +104,6 @@ if __name__ == "__main__":
     # class_test()
     # matrix_data = mmread('data/consph.mtx').tocsr()
     # numba_test(8, matrix_data, 4)
-    test_tool()
+    set_num_threads(8)
+    matrix_data = mmread('data/cant.mtx').tocsr()
+    test_tool(matrix_data)

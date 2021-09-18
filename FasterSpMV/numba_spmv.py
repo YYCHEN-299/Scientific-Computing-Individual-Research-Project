@@ -145,11 +145,16 @@ def numba_sliced_ellpack_spmv_mark2(slice_count, slice_ptr,
     return y
 
 
-# @jit(nopython=True, parallel=True, nogil=True, fastmath=True)
+@jit(nopython=True, parallel=True, nogil=True, fastmath=True)
 def numba_sliced_ellpack_spmv_h4(y, slice_count, slice_col, colidx, val, x):
 
-    for s in range(slice_count):
+    for s in prange(slice_count):
+        now_ptr = slice_col[s]
+        next_ptr = slice_col[s + 1]
         row_data = np.zeros(4, dtype=np.float32)
-        for i in range(slice_col[s], slice_col[s + 1]):
-            row_data = x[colidx[i]] * val[i]
-        y[s, :] = row_data[:]
+        lm_x = np.empty(4, dtype=np.float32)
+        for i in range(now_ptr, next_ptr):
+            for k in range(4):
+                lm_x[k] = x[colidx[i, k]]
+            row_data += lm_x * val[i]
+        y[s] = row_data
