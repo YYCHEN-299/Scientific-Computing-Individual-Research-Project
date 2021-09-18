@@ -9,7 +9,7 @@ from FasterSpMV.matrix_tools import csr_to_sellpack
 from FasterSpMV.matrix_tools import random_spmatrix
 from FasterSpMV.matrix_tools import spmatrix_to_csr
 from FasterSpMV.cuda_spmv import cuda_csr_spmv
-from FasterSpMV.cuda_spmv import cuda_sliced_ellpack_spmv
+from FasterSpMV.cuda_spmv import cuda_sliced_ellpack_spmv_1d
 
 
 def test_spmv():
@@ -66,11 +66,11 @@ def test_spmv():
     bf_ell_val = cuda.to_device(ell_val)
     bf_x = cuda.to_device(x)
 
-    cuda_sliced_ellpack_spmv[nblocks, nthreads](bf_ell_sliceptr,
-                                                bf_ell_colidx,
-                                                bf_ell_val, bf_x,
-                                                slice_height,
-                                                bf_sell_y)
+    cuda_sliced_ellpack_spmv_1d[nblocks, nthreads](bf_ell_sliceptr,
+                                                   bf_ell_colidx,
+                                                   bf_ell_val, bf_x,
+                                                   slice_height,
+                                                   bf_sell_y)
     sell_y = bf_sell_y.copy_to_host()
 
     # check the result

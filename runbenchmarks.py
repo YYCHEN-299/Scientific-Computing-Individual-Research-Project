@@ -9,11 +9,11 @@ from scipy.sparse import csc_matrix, csr_matrix
 from numba import set_num_threads, threading_layer
 from scipy.io import mmread
 
-from benchmarks.spmv_performance_benchmarks import numba_performance_benchmark
+from benchmarks.spmv_performance_benchmarks import numba_performance_benchmark, test_2d_cuda
 from benchmarks.spmv_performance_benchmarks import opencl_performance_benchmark
 from benchmarks.spmv_performance_benchmarks import cuda_performance_benchmark
-from benchmarks.spmv_performance_benchmarks import class_performance_benchmark
-from benchmarks.spmv_performance_benchmarks import test_tool
+from benchmarks.spmv_performance_benchmarks import test_operator_class
+from benchmarks.spmv_performance_benchmarks import test_numba_explicit_parallel
 from FasterSpMV.spmv import SpMVOperator
 from FasterSpMV.matrix_tools import *
 
@@ -52,7 +52,7 @@ def opencl_test(matrix_data, slice_height):
         opencl_performance_benchmark(matrix_data, slice_height, 100)
 
 
-def class_test():
+def test_op_class():
     n_row = 2000
     n_col = 2000
     sp_matrix, nnz_count, row_max_nnz = random_spmatrix(n_row, n_col, 0)
@@ -104,6 +104,10 @@ if __name__ == "__main__":
     # class_test()
     # matrix_data = mmread('data/consph.mtx').tocsr()
     # numba_test(8, matrix_data, 4)
-    set_num_threads(8)
+
+    # set_num_threads(8)
+    # matrix_data = mmread('data/cant.mtx').tocsr()
+    # test_numba_explicit_parallel(matrix_data)
+
     matrix_data = mmread('data/cant.mtx').tocsr()
-    test_tool(matrix_data)
+    test_2d_cuda(matrix_data, 32, 100)

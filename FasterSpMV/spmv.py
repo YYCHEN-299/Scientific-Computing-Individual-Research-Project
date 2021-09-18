@@ -7,7 +7,7 @@ from numba import cuda
 from FasterSpMV.matrix_tools import *
 from FasterSpMV.numba_spmv import numba_csr_spmv, numba_sliced_ellpack_spmv
 from FasterSpMV.opencl_spmv import BaseSELLSpMV, SELLSpMV, CSRSpMV
-from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_sliced_ellpack_spmv
+from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_sliced_ellpack_spmv_1d
 
 
 class SpMVOperator:
@@ -102,8 +102,8 @@ class SpMVOperator:
 
     def _cuda_sell(self, v):
         bf_x = cuda.to_device(v)
-        cuda_sliced_ellpack_spmv[self.nblocks,
-                                 self.nthreads](self.bf_ell_sliceptr,
+        cuda_sliced_ellpack_spmv_1d[self.nblocks,
+                                    self.nthreads](self.bf_ell_sliceptr,
                                                 self.bf_ell_colidx,
                                                 self.bf_ell_val, bf_x,
                                                 self.slice_height,
