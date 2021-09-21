@@ -306,10 +306,10 @@ def csr_to_sellpack_h4(n_row, rowptr, colidx, val):
             ell_val.append(slice_row_val)
 
     ell_sliceptr.append(nnz_count)
-    return np.uint32(slice_count), \
-        np.array(ell_colidx, dtype=np.uint32), \
-        np.array(ell_sliceptr, dtype=np.uint32), \
-        np.array(ell_slicecol, dtype=np.uint32), \
+    return slice_count, \
+        np.array(ell_colidx, dtype=np.int32), \
+        np.array(ell_sliceptr, dtype=np.int32), \
+        np.array(ell_slicecol, dtype=np.int32), \
         np.array(ell_val, dtype=np.float32)
 
 
@@ -418,8 +418,8 @@ def csr_to_sellpack_2d(n_row, rowptr, colidx, val, slice_height):
             ell_val.append(slice_row_val)
 
     ell_sliceptr.append(nnz_count)
-    return np.uint32(slice_count), \
-        np.array(ell_colidx, dtype=np.uint32), \
-        np.array(ell_sliceptr, dtype=np.uint32), \
-        np.array(ell_slicecol, dtype=np.uint32), \
+    return slice_count, \
+        np.array(ell_colidx, dtype=np.int32), \
+        np.array(ell_sliceptr, dtype=np.int32), \
+        np.array(ell_slicecol, dtype=np.int32), \
         np.array(ell_val, dtype=np.float32)

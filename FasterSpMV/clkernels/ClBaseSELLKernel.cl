@@ -1,3 +1,4 @@
+#define FP_FAST_FMAF
 __kernel void bsell_spmv(__global const int * restrict slice_ptr,
                          __global const int * restrict slice_col,
                          __global const int * restrict colidx,
@@ -12,7 +13,7 @@ __kernel void bsell_spmv(__global const int * restrict slice_ptr,
     j = get_local_id(0);
     for (k = 0; k < slice_col[i]; k++) {
         idx = slice_ptr[i] + k * slice_height + j;
-        row_data += x[colidx[idx]] * val[idx];
+        row_data = fma(x[colidx[idx]], val[idx], row_data);
     }
     y[i * slice_height + j] = row_data;
 }

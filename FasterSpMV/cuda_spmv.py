@@ -6,9 +6,11 @@ from numba import cuda
 @cuda.jit(fastmath=True)
 def cuda_csr_spmv(rowptr, colidx, val, x, y):
 
-    row = cuda.blockIdx.x
+    row = np.uint32(cuda.blockIdx.x)
+    ptr1 = rowptr[row]
+    ptr2 = rowptr[row + 1]
     row_data = 0.0
-    for j in range(rowptr[row], rowptr[row + 1]):
+    for j in range(ptr1, ptr2):
         row_data += val[j] * x[colidx[j]]
     y[row] = row_data
 
@@ -16,8 +18,8 @@ def cuda_csr_spmv(rowptr, colidx, val, x, y):
 @cuda.jit(fastmath=True)
 def cuda_sliced_ellpack_spmv_1d(slice_ptr, colidx, val, x, slice_height, y):
 
-    slice_id = cuda.blockIdx.x
-    slice_row_id = cuda.threadIdx.x
+    slice_id = np.uint32(cuda.blockIdx.x)
+    slice_row_id = np.uint32(cuda.threadIdx.x)
     local_idx = cuda.shared.array(2, np.uint32)
     local_y = cuda.shared.array(32, np.float32)
     row_data = 0.0
@@ -37,8 +39,8 @@ def cuda_sliced_ellpack_spmv_1d(slice_ptr, colidx, val, x, slice_height, y):
 @cuda.jit(fastmath=True)
 def cuda_sliced_ellpack_spmv_2d(slice_col, colidx, val, x, y):
 
-    slice_id = cuda.blockIdx.x
-    row_id = cuda.threadIdx.x
+    slice_id = np.uint32(cuda.blockIdx.x)
+    row_id = np.uint32(cuda.threadIdx.x)
     local_idx = cuda.shared.array(2, np.uint32)
     local_y = cuda.shared.array(32, np.float32)
     row_data = 0.0
