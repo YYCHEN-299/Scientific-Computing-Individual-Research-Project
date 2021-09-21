@@ -15,8 +15,8 @@ from scipy.sparse import csr_matrix
 from FasterSpMV.benchmark_tools import find_instr
 from FasterSpMV.matrix_tools import *
 from FasterSpMV.numba_spmv import *
-from FasterSpMV.opencl_spmv import BaseSELLSpMV, SELLSpMV, CSRSpMV, SELL4SpMV, SELL8SpMV
-from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_sliced_ellpack_spmv_1d, cuda_sliced_ellpack_spmv_2d
+from FasterSpMV.opencl_spmv import OclSELLSpMV, OclSELLGPUSpMV, OclCSRSpMV, OclSELL4SpMV, OclSELL8SpMV
+from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_1d_sell_spmv, cuda_2d_sell_spmv
 from FasterSpMV.spmv import SpMVOperator
 
 
@@ -39,7 +39,7 @@ def numba_random_data_test(n_row, n_col, per_nnz, slice_height, t):
 
     # convert CSR to Sliced ELLPACK format
     slice_count, ell_colidx, ell_sliceptr, ell_slicecol, ell_val = \
-        csr_to_sellpack(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
+        csr_to_sell(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
     rand = np.random.RandomState(0)
@@ -101,7 +101,7 @@ def numba_performance_benchmark(sp_matrix, slice_height, t):
 
     # convert CSR to Sliced ELLPACK format
     slice_count, ell_colidx, ell_sliceptr, ell_slicecol, ell_val = \
-        csr_to_sellpack(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
+        csr_to_sell(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
     rand = np.random.RandomState(0)
@@ -142,26 +142,10 @@ def numba_performance_benchmark(sp_matrix, slice_height, t):
     print("SELL perf count: ", (ell_perf_end - ell_perf_start) / t)
     sell_y = sell_y.reshape((slice_count * slice_height))
 
-    # Sliced ELLPACK test
-    bsell_y = np.zeros(slice_count * slice_height, dtype=np.float32)
-    numba_sell_spmv(slice_count, ell_sliceptr,
-                    ell_colidx, ell_val, x, bsell_y)
-    # start test
-    bell_perf_start = time.perf_counter()
-    for _ in range(t):
-        numba_sell_spmv(slice_count, ell_sliceptr,
-                        ell_colidx, ell_val, x, bsell_y)
-    bell_perf_end = time.perf_counter()
-    print("BSELL perf count: ", (bell_perf_end - bell_perf_start) / t)
-
     # check error
     ell_rel_error = np.linalg.norm(
         sell_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
     print(f"SELL Error: {round(ell_rel_error, 5)}.")
-
-    ell_rel_error = np.linalg.norm(
-        bsell_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
-    print(f"BSELL Error: {round(ell_rel_error, 5)}.")
 
     # print(sliced_ellpack_spmv.parallel_diagnostics(level=4))
     # print(sliced_ellpack_spmv.inspect_asm()
@@ -191,7 +175,7 @@ def opencl_performance_benchmark(sp_matrix, slice_height, t):
 
     # convert CSR to Sliced ELLPACK format
     slice_count, ell_colidx, ell_sliceptr, ell_slicecol, ell_val = \
-        csr_to_sellpack(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
+        csr_to_sell(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
     rand = np.random.RandomState(0)
@@ -203,8 +187,8 @@ def opencl_performance_benchmark(sp_matrix, slice_height, t):
     y_exact = sp_A.dot(x)  # SciPy SpMV
 
     # CSR test
-    csr_spmv = CSRSpMV(n_row, np.array(csr_rowptr), np.array(csr_colidx),
-                       np.array(csr_val, dtype=np.float32))
+    csr_spmv = OclCSRSpMV(n_row, np.array(csr_rowptr), np.array(csr_colidx),
+                          np.array(csr_val, dtype=np.float32))
     csr_y = csr_spmv.run(x)
 
     csr_perf_start = time.perf_counter()
@@ -214,9 +198,9 @@ def opencl_performance_benchmark(sp_matrix, slice_height, t):
     print("CSR perf time: ", (csr_perf_end - csr_perf_start) / t)
 
     # Base Sliced ELLPACK test
-    base_sell_spmv = BaseSELLSpMV(n_row, slice_count,
-                                  ell_sliceptr, ell_slicecol,
-                                  ell_colidx, ell_val, slice_height)
+    base_sell_spmv = OclSELLSpMV(n_row, slice_count,
+                                 ell_sliceptr, ell_slicecol,
+                                 ell_colidx, ell_val, slice_height)
     bsell_y = base_sell_spmv.run(x)
     bsell_perf_start = time.perf_counter()
     for _ in range(t):
@@ -225,8 +209,8 @@ def opencl_performance_benchmark(sp_matrix, slice_height, t):
     print("Base SELL perf time: ", (bsell_perf_end - bsell_perf_start) / t)
 
     # Sliced ELLPACK test
-    sell_spmv = SELLSpMV(n_row, slice_count, ell_sliceptr,
-                         ell_slicecol, ell_colidx, ell_val, slice_height)
+    sell_spmv = OclSELLGPUSpMV(n_row, slice_count, ell_sliceptr,
+                               ell_slicecol, ell_colidx, ell_val, slice_height)
     sell_y = sell_spmv.run(x)
 
     # print(csr_y)
@@ -270,7 +254,7 @@ def cuda_performance_benchmark(sp_matrix, slice_height, t):
 
     # convert CSR to Sliced ELLPACK format
     slice_count, ell_colidx, ell_sliceptr, ell_slicecol, ell_val = \
-        csr_to_sellpack(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
+        csr_to_sell(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
     rand = np.random.RandomState(0)
@@ -318,21 +302,21 @@ def cuda_performance_benchmark(sp_matrix, slice_height, t):
     bf_x = cuda.to_device(x)
 
     # first run
-    cuda_sliced_ellpack_spmv_1d[nblocks, nthreads](bf_ell_sliceptr,
-                                                   bf_ell_colidx,
-                                                   bf_ell_val, bf_x,
-                                                   slice_height,
-                                                   bf_sell_y)
+    cuda_1d_sell_spmv[nblocks, nthreads](bf_ell_sliceptr,
+                                         bf_ell_colidx,
+                                         bf_ell_val, bf_x,
+                                         slice_height,
+                                         bf_sell_y)
 
     # calculate running time
     ell_perf_start = time.perf_counter()
     for _ in range(t):
         bf_x = cuda.to_device(x)
-        cuda_sliced_ellpack_spmv_1d[nblocks, nthreads](bf_ell_sliceptr,
-                                                       bf_ell_colidx,
-                                                       bf_ell_val, bf_x,
-                                                       slice_height,
-                                                       bf_sell_y)
+        cuda_1d_sell_spmv[nblocks, nthreads](bf_ell_sliceptr,
+                                             bf_ell_colidx,
+                                             bf_ell_val, bf_x,
+                                             slice_height,
+                                             bf_sell_y)
         output_sell_y = bf_sell_y.copy_to_host()
     ell_perf_end = time.perf_counter()
     print("SELL perf count: ", (ell_perf_end - ell_perf_start) / t)
@@ -417,11 +401,11 @@ def test_numba_explicit_parallel(sp_matrix):
 
     # convert CSR to Sliced ELLPACK format
     slice_count, ell_colidx, ell_sliceptr, ell_slicecol, ell_val = \
-        csr_to_sellpack_h4(n_row, csr_rowptr, csr_colidx, csr_val)
+        csr_to_ocl_sell4(n_row, csr_rowptr, csr_colidx, csr_val)
 
     # convert CSR to Sliced ELLPACK format
     slice_count1, ell_colidx1, ell_sliceptr1, ell_slicecol1, ell_val1 = \
-        csr_to_sellpack(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
+        csr_to_sell(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
     rand = np.random.RandomState(0)
@@ -453,36 +437,19 @@ def test_numba_explicit_parallel(sp_matrix):
     # performance test
     slice_height = np.uint64(4)
     ell_y = np.empty((slice_count, 4), dtype=np.float32)
-    numba_sell_spmv_h4(ell_y, slice_count,
-                       ell_slicecol, ell_colidx, ell_val, x)
+    numba_sell4_spmv(ell_y, slice_count,
+                     ell_slicecol, ell_colidx, ell_val, x)
     # start test
     ell_start = time.perf_counter()
     for _ in range(t):
-        numba_sell_spmv_h4(ell_y, slice_count,
-                           ell_slicecol, ell_colidx, ell_val, x)
+        numba_sell4_spmv(ell_y, slice_count,
+                         ell_slicecol, ell_colidx, ell_val, x)
     ell_end = time.perf_counter()
     print("Sliced ELLPACK format runtime:", (ell_end - ell_start) / t)
 
     print(min(repeat(
-        lambda: numba_sell_spmv_h4(
+        lambda: numba_sell4_spmv(
             ell_y, slice_count, ell_slicecol, ell_colidx, ell_val, x),
-        number=50, repeat=5)))
-
-    # Sliced ELLPACK test
-    bsell_y = np.empty(slice_count1 * slice_height, dtype=np.float32)
-    numba_sell_spmv(slice_count1, ell_sliceptr1,
-                    ell_colidx1, ell_val1, x, bsell_y)
-    # start test
-    bell_perf_start = time.perf_counter()
-    for _ in range(t):
-        numba_sell_spmv(slice_count1, ell_sliceptr1,
-                        ell_colidx1, ell_val1, x, bsell_y)
-    bell_perf_end = time.perf_counter()
-    print("BSELL perf count: ", (bell_perf_end - bell_perf_start) / t)
-
-    print(min(repeat(
-        lambda: numba_sell_spmv(slice_count1, ell_sliceptr1,
-                                ell_colidx1, ell_val1, x, bsell_y),
         number=50, repeat=5)))
 
     ell_y = ell_y.reshape(-1, )
@@ -493,7 +460,7 @@ def test_numba_explicit_parallel(sp_matrix):
     # print(sliced_ellpack_spmv.parallel_diagnostics(level=4))
     # print(sliced_ellpack_spmv.inspect_asm()
     #       [list(sliced_ellpack_spmv.inspect_asm().keys())[0]])
-    find_instr(numba_sell_spmv_h4, key='mul')
+    find_instr(numba_sell4_spmv, key='mul')
 
 
 def test_2d_cuda(sp_matrix, slice_height, t):
@@ -512,10 +479,10 @@ def test_2d_cuda(sp_matrix, slice_height, t):
 
     # convert CSR to Sliced ELLPACK format
     slice_count, ell_colidx, ell_sliceptr, ell_slicecol, ell_val = \
-        csr_to_sellpack(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
+        csr_to_sell(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
 
     slice_count1, ell_colidx1, ell_sliceptr1, ell_slicecol1, ell_val1 = \
-        csr_to_sellpack_2d(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
+        csr_to_2d_sell(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
     rand = np.random.RandomState(0)
@@ -539,21 +506,21 @@ def test_2d_cuda(sp_matrix, slice_height, t):
     bf_x = cuda.to_device(x)
 
     # first run
-    cuda_sliced_ellpack_spmv_1d[nblocks, nthreads](bf_ell_sliceptr,
-                                                   bf_ell_colidx,
-                                                   bf_ell_val, bf_x,
-                                                   np.uint32(slice_height),
-                                                   bf_sell_y)
+    cuda_1d_sell_spmv[nblocks, nthreads](bf_ell_sliceptr,
+                                         bf_ell_colidx,
+                                         bf_ell_val, bf_x,
+                                         np.uint32(slice_height),
+                                         bf_sell_y)
 
     # calculate running time
     ell_perf_start = time.perf_counter()
     for _ in range(t):
         bf_x = cuda.to_device(x)
-        cuda_sliced_ellpack_spmv_1d[nblocks, nthreads](bf_ell_sliceptr,
-                                                       bf_ell_colidx,
-                                                       bf_ell_val, bf_x,
-                                                       np.uint32(slice_height),
-                                                       bf_sell_y)
+        cuda_1d_sell_spmv[nblocks, nthreads](bf_ell_sliceptr,
+                                             bf_ell_colidx,
+                                             bf_ell_val, bf_x,
+                                             np.uint32(slice_height),
+                                             bf_sell_y)
         output_sell_y = bf_sell_y.copy_to_host()
     ell_perf_end = time.perf_counter()
     print("SELL perf count: ", (ell_perf_end - ell_perf_start) / t)
@@ -561,11 +528,11 @@ def test_2d_cuda(sp_matrix, slice_height, t):
 
     def sell_time_t():
         # bf_x = cuda.to_device(x)
-        cuda_sliced_ellpack_spmv_1d[nblocks, nthreads](bf_ell_sliceptr,
-                                                       bf_ell_colidx,
-                                                       bf_ell_val, bf_x,
-                                                       np.uint32(slice_height),
-                                                       bf_sell_y)
+        cuda_1d_sell_spmv[nblocks, nthreads](bf_ell_sliceptr,
+                                             bf_ell_colidx,
+                                             bf_ell_val, bf_x,
+                                             np.uint32(slice_height),
+                                             bf_sell_y)
         output_sell_y = bf_sell_y.copy_to_host()
 
     print(min(repeat(lambda: sell_time_t(), number=50, repeat=5)))
@@ -583,19 +550,19 @@ def test_2d_cuda(sp_matrix, slice_height, t):
     bf_x = cuda.to_device(x)
 
     # first run
-    cuda_sliced_ellpack_spmv_2d[nblocks, nthreads](bf_2dell_slicecol,
-                                                   bf_2dell_colidx,
-                                                   bf_2dell_val, bf_x,
-                                                   bf_2dsell_y)
+    cuda_2d_sell_spmv[nblocks, nthreads](bf_2dell_slicecol,
+                                         bf_2dell_colidx,
+                                         bf_2dell_val, bf_x,
+                                         bf_2dsell_y)
 
     # calculate running time
     dell_perf_start = time.perf_counter()
     for _ in range(t):
         bf_x = cuda.to_device(x)
-        cuda_sliced_ellpack_spmv_2d[nblocks, nthreads](bf_2dell_slicecol,
-                                                       bf_2dell_colidx,
-                                                       bf_2dell_val, bf_x,
-                                                       bf_2dsell_y)
+        cuda_2d_sell_spmv[nblocks, nthreads](bf_2dell_slicecol,
+                                             bf_2dell_colidx,
+                                             bf_2dell_val, bf_x,
+                                             bf_2dsell_y)
         output_2dsell_y = bf_2dsell_y.copy_to_host()
     dell_perf_end = time.perf_counter()
     print("2d SELL perf count: ", (dell_perf_end - dell_perf_start) / t)
@@ -603,10 +570,10 @@ def test_2d_cuda(sp_matrix, slice_height, t):
 
     def dsell_time_t():
         # bf_x = cuda.to_device(x)
-        cuda_sliced_ellpack_spmv_2d[nblocks, nthreads](bf_2dell_slicecol,
-                                                       bf_2dell_colidx,
-                                                       bf_2dell_val, bf_x,
-                                                       bf_2dsell_y)
+        cuda_2d_sell_spmv[nblocks, nthreads](bf_2dell_slicecol,
+                                             bf_2dell_colidx,
+                                             bf_2dell_val, bf_x,
+                                             bf_2dsell_y)
         output_2dsell_y = bf_2dsell_y.copy_to_host()
 
     print(min(repeat(lambda: dsell_time_t(), number=50, repeat=5)))
@@ -676,14 +643,11 @@ def opencl_exp_performance_benchmark(sp_matrix, slice_height, t):
 
     # convert CSR to Sliced ELLPACK format
     slice_count, ell_colidx, ell_sliceptr, ell_slicecol, ell_val = \
-        csr_to_sellpack(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
+        csr_to_sell(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # convert CSR to Sliced ELLPACK format
     slice_count1, ell_colidx1, ell_sliceptr1, ell_slicecol1, ell_val1 = \
-        csr_to_sellpack_h4(n_row, csr_rowptr, csr_colidx, csr_val)
-
-    slice_count2, ell_colidx2, ell_sliceptr2, ell_slicecol2, ell_val2 = \
-        csr_to_sellpack_2d(n_row, csr_rowptr, csr_colidx, csr_val, 16)
+        csr_to_ocl_sell4(n_row, csr_rowptr, csr_colidx, csr_val)
 
     # generate a random vector
     rand = np.random.RandomState(0)
@@ -694,33 +658,20 @@ def opencl_exp_performance_benchmark(sp_matrix, slice_height, t):
                       shape=(n_row, n_col), dtype=np.float32)
     y_exact = sp_A.dot(x)  # SciPy SpMV
 
-    # CSR test
-    csr_spmv = CSRSpMV(n_row, np.array(csr_rowptr), np.array(csr_colidx),
-                       np.array(csr_val, dtype=np.float32))
-    csr_y = csr_spmv.run(x)
-
-    csr_perf_start = time.perf_counter()
+    # Sliced ELLPACK test
+    sell_spmv = OclSELLSpMV(n_row, slice_count, ell_sliceptr,
+                            ell_slicecol, ell_colidx, ell_val, slice_height)
+    sell_y = sell_spmv.run(x)
+    sell_perf_start = time.perf_counter()
     for _ in range(t):
-        csr_spmv.run(x)
-    csr_perf_end = time.perf_counter()
-    print("CSR perf time: ", (csr_perf_end - csr_perf_start) / t)
-    print(min(repeat(lambda: csr_spmv.run(x), number=50, repeat=5)))
-
-    # Base Sliced ELLPACK test
-    base_sell_spmv = BaseSELLSpMV(n_row, slice_count,
-                                  ell_sliceptr, ell_slicecol,
-                                  ell_colidx, ell_val, slice_height)
-    bsell_y = base_sell_spmv.run(x)
-    bsell_perf_start = time.perf_counter()
-    for _ in range(t):
-        base_sell_spmv.run(x)
-    bsell_perf_end = time.perf_counter()
-    print("Base SELL perf time: ", (bsell_perf_end - bsell_perf_start) / t)
-    print(min(repeat(lambda: base_sell_spmv.run(x), number=50, repeat=5)))
+        sell_spmv.run(x)
+    sell_perf_end = time.perf_counter()
+    print("Base SELL perf time: ", (sell_perf_end - sell_perf_start) / t)
+    print(min(repeat(lambda: sell_spmv.run(x), number=50, repeat=5)))
 
     # Slice ELLPACK 4 test
-    sell4_spmv = SELL4SpMV(n_row, slice_count1,
-                           ell_slicecol1, ell_colidx1, ell_val1)
+    sell4_spmv = OclSELL4SpMV(n_row, slice_count1,
+                              ell_slicecol1, ell_colidx1, ell_val1)
     sell4_y = sell4_spmv.run(x)
     sell4_perf_start = time.perf_counter()
     for _ in range(t):
@@ -729,28 +680,17 @@ def opencl_exp_performance_benchmark(sp_matrix, slice_height, t):
     print("SELL 4 perf time: ", (sell4_perf_end - sell4_perf_start) / t)
     print(min(repeat(lambda: sell4_spmv.run(x), number=50, repeat=5)))
 
-    # Slice ELLPACK 8 test
-    sell8_spmv = SELL8SpMV(n_row, slice_count2,
-                           ell_slicecol2, ell_colidx2, ell_val2)
-    sell8_y = sell8_spmv.run(x)
-    sell8_perf_start = time.perf_counter()
+    # CSR test
+    csr_spmv = OclCSRSpMV(n_row, np.array(csr_rowptr),
+                          np.array(csr_colidx),
+                          np.array(csr_val, dtype=np.float32))
+    csr_y = csr_spmv.run(x)
+    csr_perf_start = time.perf_counter()
     for _ in range(t):
-        sell8_spmv.run(x)
-    sell8_perf_end = time.perf_counter()
-    print("SELL 8 perf time: ", (sell8_perf_end - sell8_perf_start) / t)
-    print(min(repeat(lambda: sell8_spmv.run(x), number=50, repeat=5)))
-
-    # Slice ELLPACK GPU version test
-    gpu_sell_spmv = SELLSpMV(n_row, slice_count,
-                             ell_sliceptr, ell_slicecol,
-                             ell_colidx, ell_val, slice_height)
-    gpu_sell_y = gpu_sell_spmv.run(x)
-    gpu_sell_perf_start = time.perf_counter()
-    for _ in range(t):
-        base_sell_spmv.run(x)
-    gpu_sell_perf_end = time.perf_counter()
-    print("GPU SELL perf time: ", (gpu_sell_perf_end - gpu_sell_perf_start) / t)
-    print(min(repeat(lambda: gpu_sell_spmv.run(x), number=50, repeat=5)))
+        csr_spmv.run(x)
+    csr_perf_end = time.perf_counter()
+    print("CSR perf time: ", (csr_perf_end - csr_perf_start) / t)
+    print(min(repeat(lambda: csr_spmv.run(x), number=50, repeat=5)))
 
     # check error
     csr_rel_error = np.linalg.norm(
@@ -758,19 +698,10 @@ def opencl_exp_performance_benchmark(sp_matrix, slice_height, t):
     print(f"CSR Error: {round(csr_rel_error, 5)}.")
 
     bsell_rel_error = np.linalg.norm(
-        bsell_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
+        sell_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
     print(f"SELL Error: {round(bsell_rel_error, 5)}.")
 
     sell4_y = sell4_y.reshape(-1,)
     sell4_rel_error = np.linalg.norm(
         sell4_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
     print(f"SELL 4 Error: {round(sell4_rel_error, 5)}.")
-
-    sell8_y = sell8_y.reshape(-1,)
-    sell8_rel_error = np.linalg.norm(
-        sell8_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
-    print(f"SELL 4 Error: {round(sell8_rel_error, 5)}.")
-
-    gell_rel_error = np.linalg.norm(
-        gpu_sell_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
-    print(f"SELL GPU Error: {round(gell_rel_error, 5)}.")

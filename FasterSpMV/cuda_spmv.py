@@ -1,4 +1,3 @@
-import numba
 import numpy as np
 from numba import cuda
 
@@ -16,7 +15,7 @@ def cuda_csr_spmv(rowptr, colidx, val, x, y):
 
 
 @cuda.jit(fastmath=True)
-def cuda_sliced_ellpack_spmv_1d(slice_ptr, colidx, val, x, slice_height, y):
+def cuda_1d_sell_spmv(slice_ptr, colidx, val, x, slice_height, y):
 
     slice_id = np.uint32(cuda.blockIdx.x)
     slice_row_id = np.uint32(cuda.threadIdx.x)
@@ -37,7 +36,7 @@ def cuda_sliced_ellpack_spmv_1d(slice_ptr, colidx, val, x, slice_height, y):
 
 
 @cuda.jit(fastmath=True)
-def cuda_sliced_ellpack_spmv_2d(slice_col, colidx, val, x, y):
+def cuda_2d_sell_spmv(slice_col, colidx, val, x, y):
 
     slice_id = np.uint32(cuda.blockIdx.x)
     row_id = np.uint32(cuda.threadIdx.x)
@@ -58,8 +57,8 @@ def cuda_sliced_ellpack_spmv_2d(slice_col, colidx, val, x, y):
 
 
 @cuda.jit(fastmath=True)
-def cuda_sliced_ellpack_spmv_warp(slice_count, slice_ptr,
-                                  colidx, val, x, slice_height, y):
+def cuda_warp_sell_spmv(slice_count, slice_ptr,
+                        colidx, val, x, slice_height, y):
 
     slice_per_block = np.uint32(cuda.blockDim.x / slice_height)
     slice_id = np.uint32(cuda.threadIdx.x % slice_height)

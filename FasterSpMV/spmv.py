@@ -6,8 +6,8 @@ from numba import cuda
 
 from FasterSpMV.matrix_tools import *
 from FasterSpMV.numba_spmv import numba_csr_spmv, numba_sliced_ellpack_spmv
-from FasterSpMV.opencl_spmv import BaseSELLSpMV, SELLSpMV, CSRSpMV
-from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_sliced_ellpack_spmv_1d
+from FasterSpMV.opencl_spmv import OclSELLSpMV, OclSELLGPUSpMV, OclCSRSpMV
+from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_1d_sell_spmv
 
 
 class SpMVOperator:
@@ -22,7 +22,7 @@ class SpMVOperator:
 
         if format == 'csr':
             if method == 'opencl':
-                self._ocl_csr = CSRSpMV(n_row, csr_rowptr, csr_colidx, csr_val)
+                self._ocl_csr = OclCSRSpMV(n_row, csr_rowptr, csr_colidx, csr_val)
                 self.kernel = self._opencl_csr
             elif method == 'numba':
                 self.y = np.zeros(n_row, dtype=np.float32)
@@ -38,18 +38,18 @@ class SpMVOperator:
                 self.kernel = self._cuda_csr
         elif format == 'sell':
             slice_count, ell_colidx, ell_sliceptr, slice_col, ell_val = \
-                csr_to_sellpack(n_row, csr_rowptr,
-                                csr_colidx, csr_val, slice_height)
+                csr_to_sell(n_row, csr_rowptr,
+                            csr_colidx, csr_val, slice_height)
             self.slice_count = slice_count
             self.ell_colidx = ell_colidx
             self.ell_sliceptr = ell_sliceptr
             self.slice_col = slice_col
             self.ell_val = ell_val
             if method == 'opencl':
-                self._ocl_sell = BaseSELLSpMV(n_row, slice_count,
-                                              ell_sliceptr,
-                                              slice_col, ell_colidx,
-                                              ell_val, slice_height)
+                self._ocl_sell = OclSELLSpMV(n_row, slice_count,
+                                             ell_sliceptr,
+                                             slice_col, ell_colidx,
+                                             ell_val, slice_height)
                 self.kernel = self._opencl_sell
             elif method == 'numba':
                 self.y = np.zeros(slice_count *
@@ -102,8 +102,8 @@ class SpMVOperator:
 
     def _cuda_sell(self, v):
         bf_x = cuda.to_device(v)
-        cuda_sliced_ellpack_spmv_1d[self.nblocks,
-                                    self.nthreads](self.bf_ell_sliceptr,
+        cuda_1d_sell_spmv[self.nblocks,
+                          self.nthreads](self.bf_ell_sliceptr,
                                                 self.bf_ell_colidx,
                                                 self.bf_ell_val, bf_x,
                                                 self.slice_height,

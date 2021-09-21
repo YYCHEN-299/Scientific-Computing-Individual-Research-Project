@@ -112,4 +112,4 @@ if __name__ == "__main__":
 
     os.environ['PYOPENCL_CTX'] = '2'
     matrix_data = mmread('data/consph.mtx').tocsr()
-    opencl_exp_performance_benchmark(matrix_data, 4, 100)
+    opencl_exp_performance_benchmark(matrix_data, 8, 100)

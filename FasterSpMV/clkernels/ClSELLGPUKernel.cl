@@ -1,10 +1,11 @@
-__kernel void sell_spmv(__global const int * slice_start,
-                        __global const int * column_indices,
-                        __global const float * elements,
-                        __global const float * x,
-                        const int slice_height,
-                        const int slice_count,
-                        __global float * result)
+#define FP_FAST_FMAF
+__kernel void gpu_sell_spmv(__global const int * slice_start,
+                            __global const int * column_indices,
+                            __global const float * elements,
+                            __global const float * x,
+                            const int slice_height,
+                            const int slice_count,
+                            __global float * result)
 {
     int slices_per_workgroup = get_local_size(0) / slice_height;
     int id_in_slice = get_local_id(0) % slice_height;
@@ -21,7 +22,7 @@ __kernel void sell_spmv(__global const int * slice_start,
 
         for (int item_id = 0; item_id < num_columns; item_id++) {
             int index = offset + item_id * slice_height + id_in_slice;
-            sum += x[column_indices[index]] * elements[index];
+            sum = fma(x[column_indices[index]], elements[index], sum);
         }
 
         result[row] = sum;
