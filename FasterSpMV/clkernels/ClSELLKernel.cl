@@ -1,11 +1,11 @@
 #define FP_FAST_FMAF
-__kernel void bsell_spmv(__global const int * restrict slice_ptr,
-                         __global const int * restrict slice_col,
-                         __global const int * restrict colidx,
-                         __global const float * restrict val,
-                         __global const float * restrict x,
-                         const int slice_height,
-                         __global float * restrict y)
+__kernel void sell_spmv(__global const int * restrict slice_ptr,
+                        __global const int * restrict slice_col,
+                        __global const int * restrict colidx,
+                        __global const float * restrict val,
+                        __global const float * restrict x,
+                        const int slice_height,
+                        __global float * restrict y)
 {
     int i, j, k, idx;
     float row_data = 0.0f;

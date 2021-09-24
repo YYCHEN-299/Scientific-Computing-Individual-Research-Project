@@ -6,9 +6,9 @@ import pyopencl as cl
 from numba import cuda
 
 from FasterSpMV.matrix_tools import *
-from FasterSpMV.numba_spmv import numba_csr_spmv, numba_sliced_ellpack_spmv
-from FasterSpMV.opencl_spmv import OclSELLSpMV, OclSELLGPUSpMV, OclCSRSpMV
-from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_1d_sell_spmv
+from FasterSpMV.numba_spmv import numba_csr_spmv, numba_sell_spmv
+from FasterSpMV.opencl_spmv import OclSELLSpMV, OclCSRSpMV
+from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_sell_spmv
 
 
 class SpMVOperator:
@@ -109,9 +109,9 @@ class SpMVOperator:
                               self.csr_colidx, self.csr_val, v)
 
     def numba_sell(self, v):
-        return numba_sliced_ellpack_spmv(self.slice_count,
-                                         self.ell_sliceptr, self.ell_colidx,
-                                         self.ell_val, v, self.slice_height)
+        return numba_sell_spmv(self.slice_count,
+                               self.ell_sliceptr, self.ell_colidx,
+                               self.ell_val, v, self.slice_height)
 
     def opencl_csr(self, v):
         mf = cl.mem_flags
@@ -152,8 +152,8 @@ class SpMVOperator:
         bf_x = cuda.to_device(v)
         bf_sell_y = cuda.device_array(self.slice_height *
                                       self.slice_count, dtype=np.float32)
-        cuda_1d_sell_spmv[self.nblocks,
-                          self.nthreads](self.bf_ell_sliceptr,
+        cuda_sell_spmv[self.nblocks,
+                       self.nthreads](self.bf_ell_sliceptr,
                                                 self.bf_ell_colidx,
                                                 self.bf_ell_val, bf_x,
                                                 self.slice_height, bf_sell_y)

@@ -1,14 +1,9 @@
-import math
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
-from numpy.testing import assert_allclose
 
-from FasterSpMV.matrix_tools import csr_to_sell
-from FasterSpMV.matrix_tools import random_spmatrix
-from FasterSpMV.matrix_tools import spmatrix_to_csr
-from FasterSpMV.opencl_spmv import OclSELLSpMV
-from FasterSpMV.opencl_spmv import OclCSRSpMV
+from FasterSpMV.matrix_tools import csr_to_sell, random_spmatrix, spmatrix_to_csr
+from FasterSpMV.opencl_spmv import OclSELLSpMV, OclCSRSpMV
 
 
 def test_spmv():
@@ -23,15 +18,12 @@ def test_spmv():
     csr_rowptr, csr_colidx, csr_val =  spmatrix_to_csr(sp_matrix)
 
     # convert CSR to Sliced ELLPACK format
-    ell_colidx, ell_sliceptr, ell_slicecol, ell_val = \
-        csr_to_sell(csr_rowptr, csr_colidx, csr_val, slice_height)
+    slice_count, ell_colidx, ell_sliceptr, ell_slicecol, ell_val = \
+        csr_to_sell(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
     rand = np.random.RandomState(0)
     x = rand.randn(n_col).astype(np.float32)
-
-    # generate data
-    slice_count = math.ceil(n_row / slice_height)
 
     # get exact y
     sp_A = csr_matrix((csr_val, csr_colidx, csr_rowptr), shape=(n_row, n_col))
@@ -40,14 +32,12 @@ def test_spmv():
     # run CSR SpMV
     csr_spmv = OclCSRSpMV(n_row, np.array(csr_rowptr), np.array(csr_colidx),
                           np.array(csr_val, dtype=np.float32), x)
-    csr_spmv.run()
-    csr_y = csr_spmv.get_result()
+    csr_y = csr_spmv.run(x)
 
     # run Sliced ELLPACK SpMV
-    sell_spmv = OclSELLSpMV(n_row, slice_count, ell_sliceptr, ell_slicecol,
-                            ell_colidx, ell_val, x, slice_height)
-    sell_spmv.run()
-    sell_y = sell_spmv.get_result()
+    sell_spmv = OclSELLSpMV(n_row, slice_count, ell_sliceptr,
+                            ell_slicecol, ell_colidx, ell_val, x, slice_height)
+    sell_y = sell_spmv.run(x)
 
     # check the result
     assert y_exact == pytest.approx(csr_y, rel=1e-6, abs=1e-12)

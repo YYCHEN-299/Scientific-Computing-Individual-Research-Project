@@ -1,8 +1,6 @@
 import pytest
 
-from FasterSpMV.matrix_tools import csr_to_sell
-from FasterSpMV.matrix_tools import random_spmatrix
-from FasterSpMV.matrix_tools import spmatrix_to_csr
+from FasterSpMV.matrix_tools import csr_to_sell, random_spmatrix, spmatrix_to_csr
 
 
 def test_setup_tools():
@@ -23,4 +21,4 @@ def test_csr_converter():
 
 def test_sell_converter():
     with pytest.raises(ValueError):
-        csr_to_sell([5], [5], [5], -5)
+        csr_to_sell(1, [5], [5], [5], -5)

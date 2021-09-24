@@ -1,5 +1,6 @@
 import math
 import random
+import itertools
 
 import numpy as np
 from pyopencl import cltypes
@@ -26,6 +27,14 @@ def random_spmatrix(n_row, n_col, per_nnz):
         Total none zero elements number
     row_max_nnz : int
         Row wise max none zero elements number
+
+    Examples
+    --------
+    >>> n_row = 5
+    >>> n_col = 5
+    >>> per_nnz = 10
+    >>> random_spmatrix(n_row, n_col, per_nnz)
+    >>> # return a list fill with random data and 10% zero
     """
 
     if n_row < 0 or n_col < 0:
@@ -72,6 +81,17 @@ def spmatrix_to_csr(sp_matrix):
         Column index of CSR format
     val : ndarrays
         None zero elements value of CSR format
+
+    Examples
+    --------
+    >>> sp_matrix = [[0, 1],[2, 3]]
+    >>> spmatrix_to_csr(sp_matrix)
+    >>> rowptr
+        [0, 1]
+    >>> colidx
+        [1, 0, 1]
+    >>> val
+        [1, 2, 3]
     """
 
     if not isinstance(sp_matrix, list):
@@ -95,7 +115,8 @@ def spmatrix_to_csr(sp_matrix):
     rowptr.append(nnz_count)
 
     return np.array(rowptr, dtype=np.uint32), \
-        np.array(colidx, dtype=np.uint32), np.array(val, dtype=np.float32)
+        np.array(colidx, dtype=np.uint32), \
+        np.array(val, dtype=np.float32)
 
 
 def csr_to_sell(n_row, rowptr, colidx, val, slice_height):
@@ -151,8 +172,8 @@ def csr_to_sell(n_row, rowptr, colidx, val, slice_height):
         ell_sliceptr.append(nnz_count)
         ell_slicecol.append(max_nnz)
         pre_idx = dict()
-        for j in range(max_nnz):  # column-wise scan
-            for k in range(slice_height):  # row-wise scan
+        for j in range(max_nnz):  # column scan
+            for k in range(slice_height):  # row scan
                 idx = i * slice_height + k  # row index
                 now_ptr = rowptr[idx]  # start index of this row
                 next_ptr = rowptr[idx + 1]  # start index of next row
@@ -197,9 +218,9 @@ def csr_to_sell(n_row, rowptr, colidx, val, slice_height):
 
     slice_count = math.ceil(n_row / slice_height)
     return slice_count, \
-        np.array(ell_colidx, dtype=np.uint32), \
-        np.array(ell_sliceptr, dtype=np.uint32), \
-        np.array(ell_slicecol, dtype=np.uint32), \
+        np.array(ell_colidx, dtype=np.int32), \
+        np.array(ell_sliceptr, dtype=np.int32), \
+        np.array(ell_slicecol, dtype=np.int32), \
         np.array(ell_val, dtype=np.float32)
 
 
@@ -254,10 +275,10 @@ def csr_to_ocl_sell4(n_row, rowptr, colidx, val):
         total_col_count += max_nnz
         ell_slicecol.append(total_col_count)
         pre_idx = dict()
-        for j in range(max_nnz):  # column-wise scan
+        for j in range(max_nnz):  # column scan
             slice_row_val = []
             slice_row_colidx = []
-            for k in range(slice_height):  # row-wise scan
+            for k in range(slice_height):  # row scan
                 idx = i * slice_height + k  # row index
                 now_ptr = rowptr[idx]  # start index of this row
                 next_ptr = rowptr[idx + 1]  # start index of next row
@@ -269,14 +290,18 @@ def csr_to_ocl_sell4(n_row, rowptr, colidx, val):
                 else:
                     slice_row_colidx.append(pre_idx[k])
                     slice_row_val.append(0)  # padded zero
+
+            # convert to vector int
             int4_slice_row_colidx = cltypes.make_int4(slice_row_colidx[0],
                                                       slice_row_colidx[1],
                                                       slice_row_colidx[2],
                                                       slice_row_colidx[3])
+
+            # convert to vector float
             float4_slice_row_val = cltypes.make_float4(slice_row_val[0],
                                                        slice_row_val[1],
                                                        slice_row_val[2],
-                                                       slice_row_val[3],)
+                                                       slice_row_val[3], )
             ell_colidx.append(int4_slice_row_colidx)
             ell_val.append(float4_slice_row_val)
 
@@ -311,10 +336,14 @@ def csr_to_ocl_sell4(n_row, rowptr, colidx, val):
                     else:
                         slice_row_colidx.append(pre_idx[k])
                         slice_row_val.append(0)  # padded zero
+
+            # convert to vector int
             int4_slice_row_colidx = cltypes.make_int4(slice_row_colidx[0],
                                                       slice_row_colidx[1],
                                                       slice_row_colidx[2],
                                                       slice_row_colidx[3])
+
+            # convert to vector float
             float4_slice_row_val = cltypes.make_float4(slice_row_val[0],
                                                        slice_row_val[1],
                                                        slice_row_val[2],
@@ -381,10 +410,10 @@ def csr_to_ocl_sell8(n_row, rowptr, colidx, val):
         total_col_count += max_nnz
         ell_slicecol.append(total_col_count)
         pre_idx = dict()
-        for j in range(max_nnz):  # column-wise scan
+        for j in range(max_nnz):  # column scan
             slice_row_val = []
             slice_row_colidx = []
-            for k in range(slice_height):  # row-wise scan
+            for k in range(slice_height):  # row scan
                 idx = i * slice_height + k  # row index
                 now_ptr = rowptr[idx]  # start index of this row
                 next_ptr = rowptr[idx + 1]  # start index of next row
@@ -396,6 +425,8 @@ def csr_to_ocl_sell8(n_row, rowptr, colidx, val):
                 else:
                     slice_row_colidx.append(pre_idx[k])
                     slice_row_val.append(0)  # padded zero
+
+            # convert to vector int
             int8_slice_row_colidx = cltypes.make_int8(slice_row_colidx[0],
                                                       slice_row_colidx[1],
                                                       slice_row_colidx[2],
@@ -404,6 +435,8 @@ def csr_to_ocl_sell8(n_row, rowptr, colidx, val):
                                                       slice_row_colidx[5],
                                                       slice_row_colidx[6],
                                                       slice_row_colidx[7])
+
+            # convert to vector float
             float8_slice_row_val = cltypes.make_float8(slice_row_val[0],
                                                        slice_row_val[1],
                                                        slice_row_val[2],
@@ -446,6 +479,8 @@ def csr_to_ocl_sell8(n_row, rowptr, colidx, val):
                     else:
                         slice_row_colidx.append(pre_idx[k])
                         slice_row_val.append(0)  # padded zero
+
+            # convert to vector int
             int8_slice_row_colidx = cltypes.make_int8(slice_row_colidx[0],
                                                       slice_row_colidx[1],
                                                       slice_row_colidx[2],
@@ -454,6 +489,8 @@ def csr_to_ocl_sell8(n_row, rowptr, colidx, val):
                                                       slice_row_colidx[5],
                                                       slice_row_colidx[6],
                                                       slice_row_colidx[7])
+
+            # convert to vector float
             float8_slice_row_val = cltypes.make_float8(slice_row_val[0],
                                                        slice_row_val[1],
                                                        slice_row_val[2],
@@ -476,6 +513,7 @@ def csr_to_ocl_sell8(n_row, rowptr, colidx, val):
 def csr_to_2d_sell(n_row, rowptr, colidx, val, slice_height):
     """
     Convert CSR format to Sliced ELLPACK format.
+    The colidx and val will be stored as 2d array.
 
     Parameters
     ----------
@@ -525,10 +563,10 @@ def csr_to_2d_sell(n_row, rowptr, colidx, val, slice_height):
         total_col_count += max_nnz
         ell_slicecol.append(total_col_count)
         pre_idx = dict()
-        for j in range(max_nnz):  # column-wise scan
+        for j in range(max_nnz):  # column scan
             slice_row_val = []
             slice_row_colidx = []
-            for k in range(slice_height):  # row-wise scan
+            for k in range(slice_height):  # row scan
                 idx = i * slice_height + k  # row index
                 now_ptr = rowptr[idx]  # start index of this row
                 next_ptr = rowptr[idx + 1]  # start index of next row
@@ -583,3 +621,96 @@ def csr_to_2d_sell(n_row, rowptr, colidx, val, slice_height):
         np.array(ell_sliceptr, dtype=np.int32), \
         np.array(ell_slicecol, dtype=np.int32), \
         np.array(ell_val, dtype=np.float32)
+
+
+def adapt_row_th(data, row_th):
+    max_len = max([len(i) for i in data])
+    flag = max_len % row_th
+    if flag:  # if not 0
+        max_len += row_th - flag
+
+    return [l + [0] * (max_len - len(l)) for l in data]
+
+
+def get_col_list(data, row_th):
+    gp = [zip(*[iter(i)] * row_th) for i in data]
+    col_list = zip(*gp)
+
+    return list(itertools.chain.from_iterable(
+        itertools.chain.from_iterable(col_list)))
+
+
+def csr_to_align_sell(m, row_th, slice_height):
+    """
+    Convert CSR to align Sliced ELLPACK.
+
+    Parameters
+    ----------
+    m : csr matrix
+        Sparse matrix in SciPy CSR format
+    row_th : int
+        Number of Threads to calculate a row
+    slice_height : int
+        Slice height of Sliced ELLPACK
+
+    Returns
+    -------
+    val : ndarrays
+        Value array
+    colidx : ndarrays
+        Column index
+    row_len : ndarrays
+        Column length of each row
+    slice_ptr : ndarrays
+        Slice pointer
+    """
+
+    align = int(slice_height * row_th)
+    row_len = []
+    val = []
+    colidx = []
+    slice_ptr = [0]
+    for idx in range(m.shape[0]):
+        row = m.getrow(idx)
+        csr_val = row.data.tolist()
+        csr_colidx = row.indices.tolist()
+        col_count = len(csr_val)
+        val.append(csr_val)
+        colidx.append(csr_colidx)
+        row_len.append(col_count)
+
+    row_num = len(colidx)
+    gap = row_num % slice_height
+    if not gap == 0:
+        add_num = slice_height - gap
+        val.extend([[]] * add_num)
+        colidx.extend([[]] * add_num)
+        row_len.extend([0] * add_num)
+
+    for gr in zip(*[iter(val)] * slice_height):
+        gr = adapt_row_th(gr, row_th)
+        val.extend(get_col_list(gr, row_th))
+        slice_ptr.append(len(val))
+
+    for gr in zip(*[iter(colidx)] * slice_height):
+        gr = adapt_row_th(gr, row_th)
+        colidx.extend(get_col_list(gr, row_th))
+
+    shift = 0
+    for idx in range(1, len(slice_ptr)):
+        slice_ptr[idx] += shift
+        ptr1 = slice_ptr[idx - 1]
+        ptr2 = slice_ptr[idx]
+        gap = align - (ptr2 - ptr1)
+        if gap < 0:
+            continue
+        shift += gap
+        for _ in range(gap):
+            val.insert(ptr2, 0)
+            colidx.insert(ptr2, 0)
+            slice_ptr[idx] += 1
+
+    return np.array(val, dtype=np.float32), \
+        np.array(colidx, dtype=np.int32), \
+        np.array(row_len, dtype=np.int32), \
+        np.array(slice_ptr, dtype=np.int32)

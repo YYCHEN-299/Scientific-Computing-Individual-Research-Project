@@ -9,8 +9,9 @@ from scipy.sparse import csc_matrix, csr_matrix
 from numba import set_num_threads, threading_layer
 from scipy.io import mmread
 
-from benchmarks.spmv_performance_benchmarks import numba_performance_benchmark, test_2d_cuda, \
-    opencl_exp_performance_benchmark
+from benchmarks.spmv_performance_benchmarks import numba_performance_benchmark
+from benchmarks.spmv_performance_benchmarks import test_2d_cuda
+from benchmarks.spmv_performance_benchmarks import opencl_exp_performance_benchmark
 from benchmarks.spmv_performance_benchmarks import opencl_performance_benchmark
 from benchmarks.spmv_performance_benchmarks import cuda_performance_benchmark
 from benchmarks.spmv_performance_benchmarks import test_operator_class
@@ -110,6 +111,9 @@ if __name__ == "__main__":
     # matrix_data = mmread('data/cant.mtx').tocsr()
     # test_numba_explicit_parallel(matrix_data)
 
-    os.environ['PYOPENCL_CTX'] = '2'
-    matrix_data = mmread('data/consph.mtx').tocsr()
-    opencl_exp_performance_benchmark(matrix_data, 8, 100)
+    # os.environ['PYOPENCL_CTX'] = '0'
+    # matrix_data = mmread('data/cant.mtx').tocsr()
+    # opencl_exp_performance_benchmark(matrix_data, 64, 100)
+
+    matrix_data = mmread('data/cant.mtx').tocsr()
+    test_2d_cuda(matrix_data, 64, 100)
