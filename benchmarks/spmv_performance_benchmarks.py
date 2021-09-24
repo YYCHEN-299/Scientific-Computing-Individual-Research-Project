@@ -8,7 +8,7 @@ from FasterSpMV.benchmark_tools import find_instr
 from FasterSpMV.matrix_tools import *
 from FasterSpMV.numba_spmv import *
 from FasterSpMV.opencl_spmv import OclSELLSpMV, OclCSRSpMV, OclSELL4SpMV, OclSELL8SpMV, OclSELLRdSpMV
-from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_sell_spmv, cuda_2d_sell_spmv, cuda_rd_sell_spmv
+from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_sell_spmv, cuda_rd_sell_spmv
 from FasterSpMV.spmv import SpMVOperator
 
 
@@ -544,7 +544,7 @@ def test_2d_cuda(sp_matrix, slice_height, t):
     cuda_sell_spmv[nblocks, nthreads](bf_ell_sliceptr,
                                       bf_ell_colidx,
                                       bf_ell_val, bf_x,
-                                      np.uint32(slice_height),
+                                      np.int32(slice_height),
                                       bf_sell_y)
 
     # calculate running time
@@ -555,7 +555,7 @@ def test_2d_cuda(sp_matrix, slice_height, t):
         cuda_sell_spmv[nblocks, nthreads](bf_ell_sliceptr,
                                           bf_ell_colidx,
                                           bf_ell_val, bf_x,
-                                          np.uint32(slice_height),
+                                          np.int32(slice_height),
                                           bf_sell_y)
         output_sell_y = bf_sell_y.copy_to_host()
     ell_perf_end = time.perf_counter()
@@ -570,7 +570,7 @@ def test_2d_cuda(sp_matrix, slice_height, t):
         cuda_sell_spmv[nblocks, nthreads](bf_ell_sliceptr,
                                           bf_ell_colidx,
                                           bf_ell_val, bf_x,
-                                          np.uint32(slice_height),
+                                          np.int32(slice_height),
                                           bf_sell_y)
         output_sell_y = bf_sell_y.copy_to_host()
 
@@ -578,9 +578,8 @@ def test_2d_cuda(sp_matrix, slice_height, t):
 
     # rd Sliced ELLPACK test
     row_th = 4
-    align = row_th * slice_height
     ell_val2, ell_colidx2, ell_slicecol2, ell_sliceptr2 = \
-        csr_to_align_sell(sp_A, row_th, slice_height, align)
+        csr_to_align_sell(sp_A, row_th, slice_height)
 
     nblocks = (slice_count,)  # global blocks
     nthreads = (slice_height * row_th,)  # threads per block, better be a multiple of 32
@@ -595,26 +594,27 @@ def test_2d_cuda(sp_matrix, slice_height, t):
     bf_x = cuda.to_device(x)
 
     # first run
-    cuda_rd_sell_spmv[nblocks, nthreads](bf_rdsell_sliceptr,
-                                         bf_rdsell_slicecol,
-                                         bf_rdsell_colidx,
-                                         bf_rdsell_val, bf_x,
-                                         np.int32(slice_height),
-                                         np.int32(row_th),
-                                         bf_rdsell_y)
+    align = int(row_th * slice_height)
+    cuda_rd_sell_spmv[nblocks, nthreads, None, align](bf_rdsell_sliceptr,
+                                                      bf_rdsell_slicecol,
+                                                      bf_rdsell_colidx,
+                                                      bf_rdsell_val, bf_x,
+                                                      np.int32(slice_height),
+                                                      np.int32(row_th),
+                                                      bf_rdsell_y)
 
     # calculate running time
     rdell_perf_start = time.perf_counter()
     #rdell_cuda_start = cuda.event.record()
     for _ in range(t):
         bf_x = cuda.to_device(x)
-        cuda_rd_sell_spmv[nblocks, nthreads](bf_rdsell_sliceptr,
-                                             bf_rdsell_slicecol,
-                                             bf_rdsell_colidx,
-                                             bf_rdsell_val, bf_x,
-                                             np.int32(slice_height),
-                                             np.int32(row_th),
-                                             bf_rdsell_y)
+        cuda_rd_sell_spmv[nblocks, nthreads, None, align](bf_rdsell_sliceptr,
+                                                          bf_rdsell_slicecol,
+                                                          bf_rdsell_colidx,
+                                                          bf_rdsell_val, bf_x,
+                                                          np.int32(slice_height),
+                                                          np.int32(row_th),
+                                                          bf_rdsell_y)
         output_rdsell_y = bf_rdsell_y.copy_to_host()
     rdell_perf_end = time.perf_counter()
     #rdell_cuda_end = cuda.event.record()
@@ -625,13 +625,13 @@ def test_2d_cuda(sp_matrix, slice_height, t):
 
     def sell_time_t():
         # bf_x = cuda.to_device(x)
-        cuda_rd_sell_spmv[nblocks, nthreads](bf_rdsell_sliceptr,
-                                             bf_rdsell_slicecol,
-                                             bf_rdsell_colidx,
-                                             bf_rdsell_val, bf_x,
-                                             np.int32(slice_height),
-                                             np.int32(row_th),
-                                             bf_rdsell_y)
+        cuda_rd_sell_spmv[nblocks, nthreads, None, align](bf_rdsell_sliceptr,
+                                                          bf_rdsell_slicecol,
+                                                          bf_rdsell_colidx,
+                                                          bf_rdsell_val, bf_x,
+                                                          np.int32(slice_height),
+                                                          np.int32(row_th),
+                                                          bf_rdsell_y)
         output_rdsell_y = bf_rdsell_y.copy_to_host()
 
     print(min(repeat(lambda: sell_time_t(), number=50, repeat=5)))

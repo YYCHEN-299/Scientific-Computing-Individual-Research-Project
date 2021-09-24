@@ -629,11 +629,11 @@ def adapt_row_th(data, row_th):
     if flag:  # if not 0
         max_len += row_th - flag
 
-    return [l + [0] * (max_len - len(l)) for l in data]
+    return [l + [0, ] * (max_len - len(l)) for l in data]
 
 
 def get_col_list(data, row_th):
-    gp = [zip(*[iter(i)] * row_th) for i in data]
+    gp = [zip(*[iter(i)]*row_th) for i in data]
     col_list = zip(*gp)
 
     return list(itertools.chain.from_iterable(
@@ -669,7 +669,6 @@ def csr_to_align_sell(m, row_th, slice_height):
     row_len = []
     val = []
     colidx = []
-    slice_ptr = [0]
     for idx in range(m.shape[0]):
         row = m.getrow(idx)
         csr_val = row.data.tolist()
@@ -679,7 +678,7 @@ def csr_to_align_sell(m, row_th, slice_height):
         colidx.append(csr_colidx)
         row_len.append(col_count)
 
-    row_num = len(colidx)
+    row_num = len(row_len)
     gap = row_num % slice_height
     if not gap == 0:
         add_num = slice_height - gap
@@ -687,14 +686,17 @@ def csr_to_align_sell(m, row_th, slice_height):
         colidx.extend([[]] * add_num)
         row_len.extend([0] * add_num)
 
-    for gr in zip(*[iter(val)] * slice_height):
+    output_val = []
+    output_colidx = []
+    slice_ptr = [0]
+    for gr in zip(*[iter(val)]*slice_height):
         gr = adapt_row_th(gr, row_th)
-        val.extend(get_col_list(gr, row_th))
-        slice_ptr.append(len(val))
+        output_val.extend(get_col_list(gr, row_th))
+        slice_ptr.append(len(output_val))
 
-    for gr in zip(*[iter(colidx)] * slice_height):
+    for gr in zip(*[iter(colidx)]*slice_height):
         gr = adapt_row_th(gr, row_th)
-        colidx.extend(get_col_list(gr, row_th))
+        output_colidx.extend(get_col_list(gr, row_th))
 
     shift = 0
     for idx in range(1, len(slice_ptr)):
@@ -706,11 +708,11 @@ def csr_to_align_sell(m, row_th, slice_height):
             continue
         shift += gap
         for _ in range(gap):
-            val.insert(ptr2, 0)
-            colidx.insert(ptr2, 0)
+            output_val.insert(ptr2, 0)
+            output_colidx.insert(ptr2, 0)
             slice_ptr[idx] += 1
 
-    return np.array(val, dtype=np.float32), \
-        np.array(colidx, dtype=np.int32), \
+    return np.array(output_val, dtype=np.float32), \
+        np.array(output_colidx, dtype=np.int32), \
         np.array(row_len, dtype=np.int32), \
         np.array(slice_ptr, dtype=np.int32)

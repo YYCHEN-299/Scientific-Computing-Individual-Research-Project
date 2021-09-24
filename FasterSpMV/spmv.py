@@ -6,7 +6,7 @@ from numba import cuda
 
 from FasterSpMV.matrix_tools import *
 from FasterSpMV.numba_spmv import numba_csr_spmv, numba_sell_spmv
-from FasterSpMV.opencl_spmv import OclSELLSpMV, OclSELLWarpSpMV, OclCSRSpMV
+from FasterSpMV.opencl_spmv import OclSELLSpMV, OclCSRSpMV
 from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_sell_spmv
 
 
