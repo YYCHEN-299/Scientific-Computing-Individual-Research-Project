@@ -9,7 +9,7 @@ class OclSELLSpMV:
         self.queue = cl.CommandQueue(self.ctx)
 
         # read in the OpenCL source file as a string
-        f = open('FasterSpMV/clkernels/ClSELLKernel.cl', 'r')
+        f = open('FasterSpMV/oclkernels/oclSELLKernel.cl', 'r')
         fstr = ''.join(f.readlines())
 
         # create the program
@@ -68,7 +68,7 @@ class OclSELL4SpMV:
         self.queue = cl.CommandQueue(self.ctx)
 
         # read in the OpenCL source file as a string
-        f = open('FasterSpMV/clkernels/ClSELL4Kernel.cl', 'r')
+        f = open('FasterSpMV/oclkernels/oclSELL4Kernel.cl', 'r')
         fstr = ''.join(f.readlines())
 
         # create the program
@@ -119,7 +119,7 @@ class OclSELL8SpMV:
         self.queue = cl.CommandQueue(self.ctx)
 
         # read in the OpenCL source file as a string
-        f = open('FasterSpMV/clkernels/ClSELL8Kernel.cl', 'r')
+        f = open('FasterSpMV/oclkernels/oclSELL8Kernel.cl', 'r')
         fstr = ''.join(f.readlines())
 
         # create the program
@@ -171,7 +171,7 @@ class OclSELLRdSpMV:
         self.queue = cl.CommandQueue(self.ctx)
 
         # read in the OpenCL source file as a string
-        f = open('FasterSpMV/clkernels/ClSELLRdKernel.cl', 'r')
+        f = open('FasterSpMV/oclkernels/oclSELLRdKernel.cl', 'r')
         fstr = ''.join(f.readlines())
 
         # create the program
@@ -234,7 +234,7 @@ class OclCSRSpMV:
         self.queue = cl.CommandQueue(self.ctx)
 
         # read in the OpenCL source file as a string
-        f = open('FasterSpMV/clkernels/ClCSRKernel.cl', 'r')
+        f = open('FasterSpMV/oclkernels/oclCSRKernel.cl', 'r')
         fstr = ''.join(f.readlines())
 
         # create the program

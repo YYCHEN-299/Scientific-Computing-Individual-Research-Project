@@ -9,13 +9,13 @@ from scipy.sparse import csc_matrix, csr_matrix
 from numba import set_num_threads, threading_layer
 from scipy.io import mmread
 
-from benchmarks.spmv_performance_benchmarks import numba_performance_benchmark
-from benchmarks.spmv_performance_benchmarks import test_2d_cuda
-from benchmarks.spmv_performance_benchmarks import opencl_exp_performance_benchmark
-from benchmarks.spmv_performance_benchmarks import opencl_performance_benchmark
-from benchmarks.spmv_performance_benchmarks import cuda_performance_benchmark
-from benchmarks.spmv_performance_benchmarks import test_operator_class
-from benchmarks.spmv_performance_benchmarks import test_numba_explicit_parallel
+from benchmarks.spmv_benchmark import numba_performance_benchmark
+from benchmarks.spmv_benchmark import test_2d_cuda
+from benchmarks.spmv_benchmark import opencl_exp_performance_benchmark
+from benchmarks.spmv_benchmark import opencl_performance_benchmark
+from benchmarks.spmv_benchmark import cuda_performance_benchmark
+from benchmarks.spmv_benchmark import test_operator_class
+from benchmarks.spmv_benchmark import test_numba_explicit_parallel
 from FasterSpMV.spmv import SpMVOperator
 from FasterSpMV.matrix_tools import *
 
