@@ -1,21 +1,12 @@
 import argparse
 import os
-import numpy as np
-import time
 
-from scipy.sparse.linalg import LinearOperator
-from scipy.sparse.linalg import gmres
-from scipy.sparse import csc_matrix, csr_matrix
-from numba import set_num_threads, threading_layer
+from scipy.sparse.linalg import LinearOperator, gmres
 from scipy.io import mmread
+from numba import set_num_threads
 
-from benchmarks.spmv_benchmark import numba_performance_benchmark
-from benchmarks.spmv_benchmark import test_2d_cuda
-from benchmarks.spmv_benchmark import opencl_exp_performance_benchmark
-from benchmarks.spmv_benchmark import opencl_performance_benchmark
-from benchmarks.spmv_benchmark import cuda_performance_benchmark
-from benchmarks.spmv_benchmark import test_operator_class
-from benchmarks.spmv_benchmark import test_numba_explicit_parallel
+from benchmarks.linearoperator_benchmark import solver_cpu_benchmark
+from benchmarks.spmv_benchmark import *
 from FasterSpMV.spmv import SpMVOperator
 from FasterSpMV.matrix_tools import *
 
@@ -30,20 +21,10 @@ def main():
                         help="slice height of the Sliced ELLPACK format")
     args = parser.parse_args()
     matrix_data = mmread(args.file).tocsr()
-    numba_test(args.threads, matrix_data, args.slice)
-    print("========================================")
     opencl_test(matrix_data, args.slice)
 
 
-def numba_test(threads, matrix_data, slice_height):
-    set_num_threads(threads)
-    numba_performance_benchmark(matrix_data, slice_height, 1000)
-
-
 def opencl_test(matrix_data, slice_height):
-    os.environ['PYOPENCL_CTX'] = '0'
-    # os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
-
     datasets = ['data/consph.mtx', 'data/cant.mtx',
                 'data/mac_econ_fwd500.mtx', 'data/mc2depi.mtx',
                 'data/pdb1HYS.mtx', 'data/pwtk.mtx', 'data/rail4284.mtx',
@@ -51,7 +32,6 @@ def opencl_test(matrix_data, slice_height):
                 'data/webbase-1M.mtx']
     for str in datasets:
         matrix_data = mmread(str).tocsr()
-        opencl_performance_benchmark(matrix_data, slice_height, 100)
 
 
 def test_op_class():
@@ -95,25 +75,46 @@ def test_op_class():
 
 if __name__ == "__main__":
     # matrix_data = mmread('data/cant.mtx').tocsr()
-    # cuda_performance_benchmark(matrix_data, 64, 100)
-    # matrix_data = 0
-    # opencl_test(matrix_data, 32)
     # os.environ['PYOPENCL_CTX'] = '2'
-    # matrix_data = mmread('data/consph.mtx').tocsr()
-    # class_performance_benchmark(matrix_data, 32, 100)
-    # cuda_performance_benchmark(matrix_data, 32, 100)
-    # os.environ['PYOPENCL_CTX'] = '2'
-    # class_test()
-    # matrix_data = mmread('data/consph.mtx').tocsr()
-    # numba_test(8, matrix_data, 4)
-
-    # set_num_threads(8)
-    # matrix_data = mmread('data/cant.mtx').tocsr()
-    # test_numba_explicit_parallel(matrix_data)
-
+    # spmv_cpu_benchmark(matrix_data, 4, 2, 100)
     # os.environ['PYOPENCL_CTX'] = '0'
-    # matrix_data = mmread('data/cant.mtx').tocsr()
-    # opencl_exp_performance_benchmark(matrix_data, 64, 100)
+    # spmv_gpu_benchmark(matrix_data, 128, 2, 100)
 
     matrix_data = mmread('data/cant.mtx').tocsr()
-    test_2d_cuda(matrix_data, 64, 100)
+    solver_cpu_benchmark(matrix_data)
+
+    # os.environ['PYOPENCL_CTX'] = '2'
+    # sp_matrix = mmread('data/cant.mtx').tocsr()
+    # n_row, n_col = sp_matrix.shape
+    # n_row = int(n_row)
+    # n_col = int(n_col)
+    # print("Sparse matrix row:", n_row, ", column:", n_col)
+    #
+    # # get CSR data
+    # csr_rowptr = sp_matrix.indptr.astype(np.int32)
+    # csr_colidx = sp_matrix.indices.astype(np.int32)
+    # csr_val = sp_matrix.data.astype(np.float32)
+    # sp_A = csr_matrix((csr_val, csr_colidx, csr_rowptr), shape=(n_row, n_col))
+    # v = np.ones(n_col, dtype=np.float32)
+    # y_exact = sp_A.dot(v)  # SciPy SpMV
+    #
+    # csr_spmvop = SpMVOperator('opencl', 'sell', 'CPU', n_row, n_col,
+    #                           csr_rowptr, csr_colidx, csr_val, 4)
+    #
+    # z = csr_spmvop.run_matvec(v)
+    # print(z)
+    # print(y_exact)
+    #
+    # csr_spmvop = SpMVOperator('opencl', 'csr', 'CPU', n_row, n_col,
+    #                           csr_rowptr, csr_colidx, csr_val, 4)
+    # csr_A = LinearOperator((n_row, n_col), matvec=csr_spmvop.run_matvec)
+    #
+    # start = time.perf_counter()
+    # x, exitCode = gmres(csr_A, y_exact)  # exit code 0 = converge
+    # end = time.perf_counter()
+    # err = np.linalg.norm(
+    #     x - v, np.inf) / np.linalg.norm(v, np.inf)
+    # print("OpenCL CPU CSR run time:", (end - start))
+    # print("OpenCL CPU CSR exit code:", exitCode)
+    # print("OpenCL CPU CSR result error:", err)
+    # print("")

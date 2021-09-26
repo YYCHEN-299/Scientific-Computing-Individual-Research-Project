@@ -1,5 +1,4 @@
 import numpy as np
-import operator
 from numba import cuda
 
 
@@ -74,7 +73,7 @@ def cuda_sell_spmv(slice_ptr, colidx, val, x, slice_height, y):
 
 
 @cuda.jit(fastmath=True)
-def cuda_rd_sell_spmv(slice_ptr, slice_col, colidx,
+def cuda_sell_rd_spmv(slice_ptr, slice_col, colidx,
                       val, x, slice_height, row_th, y):
     """
     CUDA Sliced ELLPACK SpMV with reduction.
@@ -128,51 +127,6 @@ def cuda_rd_sell_spmv(slice_ptr, slice_col, colidx,
 
     if local_th == 0:
         y[row_id] = local_y[local_id]
-
-
-class CUDA2dSELLSpMV:
-    def __init__(self, slice_height):
-        self.align = slice_height
-
-    @cuda.jit(fastmath=True)
-    def run(self, slice_height, slice_col, colidx, val, x, y):
-        """
-        CUDA 2d Sliced ELLPACK SpMV.
-
-        Parameters
-        ----------
-        slice_col : ndarrays
-            Column length of each slice
-        colidx : ndarrays
-            Column index array
-        val : ndarrays
-            Value array
-        x : ndarrays
-            Vector to multiply with matrix
-        y : ndarrays
-            SpMV result
-
-        Returns
-        -------
-        Nothing
-        """
-
-        slice_id = np.int32(cuda.blockIdx.x)
-        row_id = np.int32(cuda.threadIdx.x)
-        local_idx = cuda.shared.array(2, np.int32)
-        local_y = cuda.shared.array(self.slice_height, np.float32)
-        row_data = 0.0
-        if row_id == 0:
-            local_idx[0] = slice_col[slice_id]
-            local_idx[1] = slice_col[slice_id + 1]
-        cuda.syncthreads()
-        for i in range(local_idx[0], local_idx[1]):
-            row_data += x[colidx[i, row_id]] * val[i, row_id]
-        local_y[row_id] = row_data
-        cuda.syncthreads()
-        if row_id == slice_height - 1:
-            for k in range(slice_height):
-                y[slice_id, k] = local_y[k]
 
 
 @cuda.jit(fastmath=True)

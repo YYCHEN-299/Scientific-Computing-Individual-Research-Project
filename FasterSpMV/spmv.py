@@ -1,11 +1,7 @@
-import numpy as np
-
-from numba import cuda
-
 from FasterSpMV.matrix_tools import *
-from FasterSpMV.numba_spmv import numba_csr_spmv, numba_sell_spmv
-from FasterSpMV.opencl_spmv import OclSELLSpMV, OclCSRSpMV
-from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_sell_spmv
+from FasterSpMV.numba_spmv import *
+from FasterSpMV.opencl_spmv import *
+from FasterSpMV.cuda_spmv import *
 
 
 class SpMVOperator:
@@ -45,10 +41,13 @@ class SpMVOperator:
             self.slice_col = slice_col
             self.ell_val = ell_val
             if method == 'opencl':
-                self._ocl_sell = OclSELLSpMV(n_row, slice_count,
-                                             ell_sliceptr, slice_col,
-                                             ell_colidx, ell_val,
-                                             slice_height, dev)
+                sliceocl4_count, sellocl4_colidx, _, \
+                    sellocl4_slicecol, sellocl4_val = \
+                    csr_to_ocl_sell4(n_row, csr_rowptr, csr_colidx, csr_val)
+                self._ocl_sell = OclSELL4SpMV(n_row, sliceocl4_count,
+                                              sellocl4_slicecol,
+                                              sellocl4_colidx,
+                                              sellocl4_val, dev)
                 self.kernel = self._opencl_sell
             elif method == 'numba':
                 self.y = np.zeros(slice_count * slice_height,
@@ -65,13 +64,12 @@ class SpMVOperator:
                 self.bf_ell_val = cuda.to_device(ell_val)
                 self.kernel = self._cuda_sell
 
-        # first run kernel
+        # first run the kernel
         x = np.ones(n_col, dtype=np.float32)
         self.kernel(x)
 
     def run_matvec(self, v):
-        y = self.kernel(v)
-        return y
+        return self.kernel(v)
 
     def _numba_csr(self, v):
         numba_csr_spmv(self.y, self.n_row,
@@ -80,18 +78,19 @@ class SpMVOperator:
 
     def _numba_sell(self, v):
         numba_sell_spmv(self.y, self.slice_count,
-                        self.ell_sliceptr, self.slice_col,
-                        self.ell_colidx, self.ell_val, v, self.slice_height)
-        return self.y
+                        self.ell_sliceptr, self.ell_colidx,
+                        self.ell_val, v, self.slice_height)
+        return self.y[:self.n_row]
 
     def _opencl_csr(self, v):
         return self._ocl_csr.run(v)
 
     def _opencl_sell(self, v):
-        return self._ocl_sell.run(v)
+        _y = self._ocl_sell.run(v)
+        return _y[:self.n_row]
 
     def _cuda_csr(self, v):
-        bf_x = cuda.to_device(v)
+        bf_x = cuda.to_device(v, stream=cuda.stream())
         cuda_csr_spmv[self.nblocks, self.nthreads](self.bf_csr_rowptr,
                                                    self.bf_csr_colidx,
                                                    self.bf_csr_val,
@@ -101,7 +100,7 @@ class SpMVOperator:
         return output_csr_y
 
     def _cuda_sell(self, v):
-        bf_x = cuda.to_device(v)
+        bf_x = cuda.to_device(v, stream=cuda.stream())
         cuda_sell_spmv[self.nblocks, self.nthreads](self.bf_ell_sliceptr,
                                                     self.bf_ell_colidx,
                                                     self.bf_ell_val,
@@ -109,4 +108,4 @@ class SpMVOperator:
                                                     self.slice_height,
                                                     self.bf_sell_y)
         output_sell_y = self.bf_sell_y.copy_to_host()
-        return output_sell_y
+        return output_sell_y[:self.n_row]

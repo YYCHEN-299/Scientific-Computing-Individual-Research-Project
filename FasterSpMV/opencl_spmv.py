@@ -26,12 +26,11 @@ class OclSELLSpMV:
         self.mf = mf = cl.mem_flags
         mem_flag = mf.USE_HOST_PTR
         if dev == 'GPU':
-            mem_flag = mf.USE_HOST_PTR
+            mem_flag = mf.COPY_HOST_PTR
         self.mem_flag = mem_flag
 
         # create OpenCL buffers
         self._y = np.empty(slice_count * slice_height, dtype=np.float32)
-        self.sell_y = np.empty_like(self._y, dtype=np.float32)
         self.slice_ptr_buf = cl.Buffer(self.ctx,
                                        mf.READ_ONLY | mem_flag,
                                        hostbuf=slice_ptr)
@@ -58,8 +57,9 @@ class OclSELLSpMV:
                                self.slice_col_buf, self.colidx_buf,
                                self.val_buf, x_buf,
                                self.slice_height, self.y_buf)
-        cl.enqueue_copy(self.queue, self.sell_y, self.y_buf)
-        return self.sell_y
+        sell_y = np.empty_like(self._y, dtype=np.float32)
+        cl.enqueue_copy(self.queue, sell_y, self.y_buf)
+        return sell_y
 
 
 class OclSELL4SpMV:
@@ -83,12 +83,11 @@ class OclSELL4SpMV:
         self.mf = mf = cl.mem_flags
         mem_flag = mf.USE_HOST_PTR
         if dev == 'GPU':
-            mem_flag = mf.USE_HOST_PTR
+            mem_flag = mf.COPY_HOST_PTR
         self.mem_flag = mem_flag
 
         # create OpenCL buffers
         self._y = np.empty((slice_count, slice_height), dtype=np.float32)
-        self.sell4_y = np.empty_like(self._y, dtype=np.float32)
         self.slice_col_buf = cl.Buffer(self.ctx,
                                        mf.READ_ONLY | mem_flag,
                                        hostbuf=slice_col)
@@ -109,8 +108,9 @@ class OclSELL4SpMV:
         self.program.sell4_spmv(self.queue, (self.slice_count,), None,
                                 self.slice_col_buf, self.colidx_buf,
                                 self.val_buf, x_buf, self.y_buf)
-        cl.enqueue_copy(self.queue, self.sell4_y, self.y_buf)
-        return self.sell4_y.reshape(-1,)
+        sell4_y = np.empty_like(self._y, dtype=np.float32)
+        cl.enqueue_copy(self.queue, sell4_y, self.y_buf)
+        return sell4_y.reshape(-1,)
 
 
 class OclSELL8SpMV:
@@ -134,12 +134,11 @@ class OclSELL8SpMV:
         self.mf = mf = cl.mem_flags
         mem_flag = mf.USE_HOST_PTR
         if dev == 'GPU':
-            mem_flag = mf.USE_HOST_PTR
+            mem_flag = mf.COPY_HOST_PTR
         self.mem_flag = mem_flag
 
         # create OpenCL buffers
         self._y = np.empty((slice_count, slice_height), dtype=np.float32)
-        self.sell8_y = np.empty_like(self._y, dtype=np.float32)
         self.slice_col_buf = cl.Buffer(self.ctx,
                                        mf.READ_ONLY | mem_flag,
                                        hostbuf=slice_col)
@@ -160,8 +159,9 @@ class OclSELL8SpMV:
         self.program.sell8_spmv(self.queue, (self.slice_count,), None,
                                 self.slice_col_buf, self.colidx_buf,
                                 self.val_buf, x_buf, self.y_buf)
-        cl.enqueue_copy(self.queue, self.sell8_y, self.y_buf)
-        return self.sell8_y.reshape(-1,)
+        sell8_y = np.empty_like(self._y, dtype=np.float32)
+        cl.enqueue_copy(self.queue, sell8_y, self.y_buf)
+        return sell8_y.reshape(-1,)
 
 
 class OclSELLRdSpMV:
@@ -189,12 +189,11 @@ class OclSELLRdSpMV:
         self.mf = mf = cl.mem_flags
         mem_flag = mf.USE_HOST_PTR
         if dev == 'GPU':
-            mem_flag = mf.USE_HOST_PTR
+            mem_flag = mf.COPY_HOST_PTR
         self.mem_flag = mem_flag
 
         # create OpenCL buffers
         self._y = np.empty(slice_count * slice_height, dtype=np.float32)
-        self.sellrd_y = np.empty_like(self._y, dtype=np.float32)
         self.slice_ptr_buf = cl.Buffer(self.ctx,
                                        mf.READ_ONLY | mem_flag,
                                        hostbuf=slice_ptr)
@@ -224,8 +223,9 @@ class OclSELLRdSpMV:
                                   self.val_buf, x_buf, self.slice_height,
                                   self.slice_count, self.row_th,
                                   self.local_mem, self.y_buf)
-        cl.enqueue_copy(self.queue, self.sellrd_y, self.y_buf)
-        return self.sellrd_y
+        sellrd_y = np.empty_like(self._y, dtype=np.float32)
+        cl.enqueue_copy(self.queue, sellrd_y, self.y_buf)
+        return sellrd_y
 
 
 class OclCSRSpMV:
@@ -247,13 +247,12 @@ class OclCSRSpMV:
         self.mf = mf = cl.mem_flags
         mem_flag = mf.USE_HOST_PTR
         if dev == 'GPU':
-            mem_flag = mf.USE_HOST_PTR
+            mem_flag = mf.COPY_HOST_PTR
         self.mem_flag = mem_flag
 
         # create OpenCL buffers
         mf = cl.mem_flags
         self._y = np.empty(num_row, dtype=np.float32)
-        self.csr_y = np.empty_like(self._y, dtype=np.float32)
         self.rowptr_buf = cl.Buffer(self.ctx,
                                     mf.READ_ONLY | mf.COPY_HOST_PTR,
                                     hostbuf=rowptr)
@@ -275,5 +274,6 @@ class OclCSRSpMV:
         self.program.csr_spmv(self.queue, (self.num_row,), None,
                               self.rowptr_buf, self.colidx_buf,
                               self.val_buf, x_buf, self.y_buf)
-        cl.enqueue_copy(self.queue, self.csr_y, self.y_buf)
-        return self.csr_y
+        csr_y = np.empty_like(self._y, dtype=np.float32)
+        cl.enqueue_copy(self.queue, csr_y, self.y_buf)
+        return csr_y
