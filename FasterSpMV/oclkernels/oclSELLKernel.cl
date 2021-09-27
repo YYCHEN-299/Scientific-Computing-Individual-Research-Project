@@ -17,5 +17,3 @@ __kernel void sell_spmv(__global const int * restrict slice_ptr,
     }
     y[i * slice_height + j] = row_data;
 }
-
-
