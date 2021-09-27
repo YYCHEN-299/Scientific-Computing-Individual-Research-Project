@@ -1,5 +1,6 @@
 import numpy as np
 from numba import cuda
+from numba.cuda.libdevice import fmaf, mul24
 
 
 @cuda.jit(fastmath=True)
@@ -25,12 +26,10 @@ def cuda_csr_spmv(rowptr, colidx, val, x, y):
     Nothing
     """
 
-    row = np.int32(cuda.blockIdx.x)
-    ptr1 = rowptr[row]
-    ptr2 = rowptr[row + 1]
+    row = cuda.blockIdx.x
     row_data = 0.0
-    for j in range(ptr1, ptr2):
-        row_data += val[j] * x[colidx[j]]
+    for j in range(rowptr[row], rowptr[row + 1]):
+        row_data = fmaf(val[j], x[colidx[j]], row_data)
     y[row] = row_data
 
 
@@ -68,8 +67,8 @@ def cuda_sell_spmv(slice_ptr, colidx, val, x, slice_height, y):
         local_idx[1] = slice_ptr[slice_id + 1]
     cuda.syncthreads()
     for i in range(local_idx[0] + slice_row_id, local_idx[1], slice_height):
-        row_data += x[colidx[i]] * val[i]
-    y[slice_id * slice_height + slice_row_id] = row_data
+        row_data = fmaf(x[colidx[i]], val[i], row_data)
+    y[mul24(slice_id, slice_height) + slice_row_id] = row_data
 
 
 @cuda.jit(fastmath=True)
@@ -114,7 +113,7 @@ def cuda_sell_rd_spmv(slice_ptr, slice_col, colidx,
 
     for i in range(row_len):
         idx = i * slice_height * row_th + slice_ptr[slice_id] + local_id
-        sub_data += x[colidx[idx]] * val[idx]
+        sub_data = fmaf(x[colidx[idx]], val[idx], sub_data)
     local_y[local_id] = sub_data
     cuda.syncthreads()
 
@@ -130,7 +129,7 @@ def cuda_sell_rd_spmv(slice_ptr, slice_col, colidx,
 
 
 @cuda.jit(fastmath=True)
-def cuda_warp_sell_spmv(self, slice_count, slice_ptr,
+def cuda_warp_sell_spmv(slice_count, slice_ptr,
                         colidx, val, x, slice_height, y):
     """
     CUDA Sliced ELLPACK SpMV adapt to warp number.
@@ -171,5 +170,5 @@ def cuda_warp_sell_spmv(self, slice_count, slice_ptr,
         num_columns = np.int32((next_offset - offset) / slice_height)
         for item_id in range(num_columns):
             idx = offset + item_id * slice_height + slice_id
-            row_data += x[colidx[idx]] * val[idx]
+            row_data = fmaf(x[colidx[idx]], val[idx], row_data)
         y[row] = sum

@@ -254,17 +254,17 @@ class OclCSRSpMV:
         mf = cl.mem_flags
         self._y = np.empty(num_row, dtype=np.float32)
         self.rowptr_buf = cl.Buffer(self.ctx,
-                                    mf.READ_ONLY | mf.COPY_HOST_PTR,
+                                    mf.READ_ONLY | mem_flag,
                                     hostbuf=rowptr)
         self.colidx_buf = cl.Buffer(self.ctx,
-                                    mf.READ_ONLY | mf.COPY_HOST_PTR,
+                                    mf.READ_ONLY | mem_flag,
                                     hostbuf=colidx)
         self.val_buf = cl.Buffer(self.ctx,
-                                 mf.READ_ONLY | mf.COPY_HOST_PTR,
+                                 mf.READ_ONLY | mem_flag,
                                  hostbuf=val)
         # self.y_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, self._y.nbytes)
         self.y_buf = cl.Buffer(self.ctx,
-                               mf.WRITE_ONLY | mf.COPY_HOST_PTR,
+                               mf.WRITE_ONLY | mem_flag,
                                hostbuf=self._y)
 
     def run(self, x):

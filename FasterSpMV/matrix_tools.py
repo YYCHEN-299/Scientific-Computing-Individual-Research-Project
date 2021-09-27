@@ -171,7 +171,7 @@ def csr_to_sell(n_row, rowptr, colidx, val, slice_height):
 
         ell_sliceptr.append(nnz_count)
         ell_slicecol.append(max_nnz)
-        pre_idx = dict()
+        pre_idx = 0
         for j in range(max_nnz):  # column scan
             for k in range(slice_height):  # row scan
                 idx = i * slice_height + k  # row index
@@ -179,11 +179,11 @@ def csr_to_sell(n_row, rowptr, colidx, val, slice_height):
                 next_ptr = rowptr[idx + 1]  # start index of next row
                 nnz_count += 1  # count non-zero number
                 if now_ptr + j < next_ptr:
-                    pre_idx[k] = colidx[now_ptr + j]
+                    pre_idx = colidx[now_ptr + j]
                     ell_colidx.append(colidx[now_ptr + j])
                     ell_val.append(val[now_ptr + j])
                 else:
-                    ell_colidx.append(pre_idx[k])
+                    ell_colidx.append(pre_idx)
                     ell_val.append(0)  # padded zero
 
     if N % slice_height != 0:  # if have remainder
@@ -196,7 +196,7 @@ def csr_to_sell(n_row, rowptr, colidx, val, slice_height):
 
         ell_sliceptr.append(nnz_count)
         ell_slicecol.append(max_nnz)
-        pre_idx = dict()
+        pre_idx = 0
         for j in range(max_nnz):  # column
             for k in range(slice_height):  # row
                 nnz_count += 1  # count non-zero number
@@ -208,11 +208,11 @@ def csr_to_sell(n_row, rowptr, colidx, val, slice_height):
                     now_ptr = rowptr[idx]  # start index of this row
                     next_ptr = rowptr[idx + 1]  # start index of next row
                     if now_ptr + j < next_ptr:
-                        pre_idx[k] = colidx[now_ptr + j]
+                        pre_idx = colidx[now_ptr + j]
                         ell_colidx.append(colidx[now_ptr + j])
                         ell_val.append(val[now_ptr + j])
                     else:
-                        ell_colidx.append(pre_idx[k])
+                        ell_colidx.append(pre_idx)
                         ell_val.append(0)  # padded zero
     ell_sliceptr.append(nnz_count)
 
@@ -274,7 +274,7 @@ def csr_to_ocl_sell4(n_row, rowptr, colidx, val):
         ell_sliceptr.append(nnz_count)
         total_col_count += max_nnz
         ell_slicecol.append(total_col_count)
-        pre_idx = dict()
+        pre_idx = 0
         for j in range(max_nnz):  # column scan
             slice_row_val = []
             slice_row_colidx = []
@@ -284,11 +284,11 @@ def csr_to_ocl_sell4(n_row, rowptr, colidx, val):
                 next_ptr = rowptr[idx + 1]  # start index of next row
                 nnz_count += 1  # count non-zero number
                 if now_ptr + j < next_ptr:
-                    pre_idx[k] = colidx[now_ptr + j]
+                    pre_idx = colidx[now_ptr + j]
                     slice_row_colidx.append(colidx[now_ptr + j])
                     slice_row_val.append(val[now_ptr + j])
                 else:
-                    slice_row_colidx.append(pre_idx[k])
+                    slice_row_colidx.append(pre_idx)
                     slice_row_val.append(0)  # padded zero
 
             # convert to vector int
@@ -316,7 +316,7 @@ def csr_to_ocl_sell4(n_row, rowptr, colidx, val):
         ell_sliceptr.append(nnz_count)
         total_col_count += max_nnz
         ell_slicecol.append(total_col_count)
-        pre_idx = dict()
+        pre_idx = 0
         for j in range(max_nnz):  # column
             slice_row_val = []
             slice_row_colidx = []
@@ -330,11 +330,11 @@ def csr_to_ocl_sell4(n_row, rowptr, colidx, val):
                     now_ptr = rowptr[idx]  # start index of this row
                     next_ptr = rowptr[idx + 1]  # start index of next row
                     if now_ptr + j < next_ptr:
-                        pre_idx[k] = colidx[now_ptr + j]
+                        pre_idx = colidx[now_ptr + j]
                         slice_row_colidx.append(colidx[now_ptr + j])
                         slice_row_val.append(val[now_ptr + j])
                     else:
-                        slice_row_colidx.append(pre_idx[k])
+                        slice_row_colidx.append(pre_idx)
                         slice_row_val.append(0)  # padded zero
 
             # convert to vector int
@@ -409,7 +409,7 @@ def csr_to_ocl_sell8(n_row, rowptr, colidx, val):
         ell_sliceptr.append(nnz_count)
         total_col_count += max_nnz
         ell_slicecol.append(total_col_count)
-        pre_idx = dict()
+        pre_idx = 0
         for j in range(max_nnz):  # column scan
             slice_row_val = []
             slice_row_colidx = []
@@ -419,11 +419,11 @@ def csr_to_ocl_sell8(n_row, rowptr, colidx, val):
                 next_ptr = rowptr[idx + 1]  # start index of next row
                 nnz_count += 1  # count non-zero number
                 if now_ptr + j < next_ptr:
-                    pre_idx[k] = colidx[now_ptr + j]
+                    pre_idx = colidx[now_ptr + j]
                     slice_row_colidx.append(colidx[now_ptr + j])
                     slice_row_val.append(val[now_ptr + j])
                 else:
-                    slice_row_colidx.append(pre_idx[k])
+                    slice_row_colidx.append(pre_idx)
                     slice_row_val.append(0)  # padded zero
 
             # convert to vector int
@@ -459,7 +459,7 @@ def csr_to_ocl_sell8(n_row, rowptr, colidx, val):
         ell_sliceptr.append(nnz_count)
         total_col_count += max_nnz
         ell_slicecol.append(total_col_count)
-        pre_idx = dict()
+        pre_idx = 0
         for j in range(max_nnz):  # column
             slice_row_val = []
             slice_row_colidx = []
@@ -473,11 +473,11 @@ def csr_to_ocl_sell8(n_row, rowptr, colidx, val):
                     now_ptr = rowptr[idx]  # start index of this row
                     next_ptr = rowptr[idx + 1]  # start index of next row
                     if now_ptr + j < next_ptr:
-                        pre_idx[k] = colidx[now_ptr + j]
+                        pre_idx = colidx[now_ptr + j]
                         slice_row_colidx.append(colidx[now_ptr + j])
                         slice_row_val.append(val[now_ptr + j])
                     else:
-                        slice_row_colidx.append(pre_idx[k])
+                        slice_row_colidx.append(pre_idx)
                         slice_row_val.append(0)  # padded zero
 
             # convert to vector int
@@ -562,7 +562,7 @@ def csr_to_2d_sell(n_row, rowptr, colidx, val, slice_height):
         ell_sliceptr.append(nnz_count)
         total_col_count += max_nnz
         ell_slicecol.append(total_col_count)
-        pre_idx = dict()
+        pre_idx = 0
         for j in range(max_nnz):  # column scan
             slice_row_val = []
             slice_row_colidx = []
@@ -572,11 +572,11 @@ def csr_to_2d_sell(n_row, rowptr, colidx, val, slice_height):
                 next_ptr = rowptr[idx + 1]  # start index of next row
                 nnz_count += 1  # count non-zero number
                 if now_ptr + j < next_ptr:
-                    pre_idx[k] = colidx[now_ptr + j]
+                    pre_idx = colidx[now_ptr + j]
                     slice_row_colidx.append(colidx[now_ptr + j])
                     slice_row_val.append(val[now_ptr + j])
                 else:
-                    slice_row_colidx.append(pre_idx[k])
+                    slice_row_colidx.append(pre_idx)
                     slice_row_val.append(0)  # padded zero
             ell_colidx.append(slice_row_colidx)
             ell_val.append(slice_row_val)
@@ -592,7 +592,7 @@ def csr_to_2d_sell(n_row, rowptr, colidx, val, slice_height):
         ell_sliceptr.append(nnz_count)
         total_col_count += max_nnz
         ell_slicecol.append(total_col_count)
-        pre_idx = dict()
+        pre_idx = 0
         for j in range(max_nnz):  # column
             slice_row_val = []
             slice_row_colidx = []
@@ -606,11 +606,11 @@ def csr_to_2d_sell(n_row, rowptr, colidx, val, slice_height):
                     now_ptr = rowptr[idx]  # start index of this row
                     next_ptr = rowptr[idx + 1]  # start index of next row
                     if now_ptr + j < next_ptr:
-                        pre_idx[k] = colidx[now_ptr + j]
+                        pre_idx = colidx[now_ptr + j]
                         slice_row_colidx.append(colidx[now_ptr + j])
                         slice_row_val.append(val[now_ptr + j])
                     else:
-                        slice_row_colidx.append(pre_idx[k])
+                        slice_row_colidx.append(pre_idx)
                         slice_row_val.append(0)  # padded zero
             ell_colidx.append(slice_row_colidx)
             ell_val.append(slice_row_val)
