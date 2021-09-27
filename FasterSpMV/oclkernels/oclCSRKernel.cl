@@ -13,3 +13,5 @@ __kernel void csr_spmv(__global const int * restrict rowptr,
     }
     y[i] = row_data;
 }
+
+

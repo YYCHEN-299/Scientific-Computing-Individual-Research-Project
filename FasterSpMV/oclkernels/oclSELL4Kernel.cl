@@ -19,3 +19,5 @@ __kernel void sell4_spmv(__global const int * restrict slice_col,
     }
     vstore4(row_data, i, (__global float *)y);
 }
+
+

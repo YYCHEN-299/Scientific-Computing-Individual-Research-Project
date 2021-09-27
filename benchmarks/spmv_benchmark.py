@@ -307,31 +307,6 @@ def spmv_gpu_benchmark(sp_matrix, slice_height, row_th, t):
     print(f"SELL result error: {round(sell_rel_error, 2)}.")
     print("")
 
-    # === Sliced ELLPACK with reduction test ===
-    # get data
-    sellrd_val, sellrd_colidx, sellrd_slicecol, sellrd_sliceptr = \
-        csr_to_align_sell(sp_matrix, row_th, slice_height)
-
-    sellrd_spmv = OclSELLRdSpMV(n_row, slice_count, sellrd_sliceptr,
-                                sellrd_slicecol, sellrd_colidx,
-                                sellrd_val, slice_height, row_th, 'GPU')
-    sellrd_y = sellrd_spmv.run(x)
-
-    sellrd_time_list = []
-    for _ in range(t):
-        start = time.perf_counter()
-        sellrd_spmv.run(x)
-        end = time.perf_counter()
-        sellrd_time_list.append((end - start))
-
-    print("SELL-rd avg run time:", np.mean(sellrd_time_list))
-    print("SELL-rd min run time:", np.min(sellrd_time_list))
-    print("SELL-rd run time std:", np.std(sellrd_time_list))
-    sellrd_rel_error = np.linalg.norm(
-        sellrd_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
-    print(f"SELL-rd result error: {round(sellrd_rel_error, 2)}.")
-    print("")
-
     # ========================================================================
     # CUDA SpMV
     print("CUDA SpMV benchmark...")
@@ -418,55 +393,3 @@ def spmv_gpu_benchmark(sp_matrix, slice_height, row_th, t):
     sell_rel_error = np.linalg.norm(
         sell_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
     print(f"SELL result error: {round(sell_rel_error, 2)}.")
-    print("")
-
-    # === Sliced ELLPACK with reduction test ===
-    nblocks = (slice_count,)  # global blocks
-    nthreads = (slice_height * row_th,)  # threads per block, better be a multiple of 32
-
-    # CUDA buffer
-    stream = cuda.stream()
-    _sellrd_y = np.empty((slice_height * slice_count), dtype=np.float32)
-    # bf_sellrd_y = cuda.device_array(slice_height * slice_count,
-    #                                 dtype=np.float32)
-    bf_sellrd_y = cuda.to_device(_sellrd_y, stream=stream)
-    bf_sellrd_sliceptr = cuda.to_device(sellrd_sliceptr, stream=stream)
-    bf_sellrd_colidx = cuda.to_device(sellrd_colidx, stream=stream)
-    bf_sellrd_slicecol = cuda.to_device(sellrd_slicecol, stream=stream)
-    bf_sellrd_val = cuda.to_device(sellrd_val, stream=stream)
-    bf_x = cuda.to_device(x, stream=stream)
-
-    # first run
-    align = int(row_th * slice_height)
-    cuda_sell_rd_spmv[nblocks, nthreads, None, align](bf_sellrd_sliceptr,
-                                                      bf_sellrd_slicecol,
-                                                      bf_sellrd_colidx,
-                                                      bf_sellrd_val, bf_x,
-                                                      slice_height,
-                                                      row_th,
-                                                      bf_sellrd_y)
-
-    # calculate running time
-    sellrd_y = np.empty_like(_sellrd_y, dtype=np.float32)
-    sellrd_time_list = []
-    for _ in range(t):
-        start = time.perf_counter()
-        bf_x = cuda.to_device(x)
-        cuda_sell_rd_spmv[nblocks, nthreads, None, align](bf_sellrd_sliceptr,
-                                                          bf_sellrd_slicecol,
-                                                          bf_sellrd_colidx,
-                                                          bf_sellrd_val, bf_x,
-                                                          slice_height,
-                                                          row_th,
-                                                          bf_sellrd_y)
-        sellrd_y = bf_sellrd_y.copy_to_host()
-        end = time.perf_counter()
-        sellrd_time_list.append((end - start))
-
-    print("SELL-rd avg run time:", np.mean(sellrd_time_list))
-    print("SELL-rd min run time:", np.min(sellrd_time_list))
-    print("SELL-rd run time std:", np.std(sellrd_time_list))
-    sellrd_y = bf_sellrd_y.copy_to_host()
-    sellrd_rel_error = np.linalg.norm(
-        sellrd_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
-    print(f"SELL-rd result error: {round(sellrd_rel_error, 2)}.")

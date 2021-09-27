@@ -15,7 +15,6 @@ __kernel void sell_rd_spmv(__global const int * slice_start,
     int slice_id = get_group_id(0);
     int global_th = slice_id * slice_height * row_th + local_id;
     int row_id = global_th / row_th;
-
     float sub_data = 0.0;
     int row_len = (slice_col[row_id] + row_th - 1) / row_th;
     int idx = 0;
@@ -25,14 +24,12 @@ __kernel void sell_rd_spmv(__global const int * slice_start,
     }
     lm_y[local_id] = sub_data;
     barrier(CLK_LOCAL_MEM_FENCE);
-
     for (int s = row_th / 2; s > 0; s >>= 1) {
         if (local_th < s) {
             lm_y[local_id] += lm_y[local_id + s];
             barrier(CLK_LOCAL_MEM_FENCE);
         }
     }
-
     if (local_th == 0) {
         y[row_id] = lm_y[local_id];
     }
