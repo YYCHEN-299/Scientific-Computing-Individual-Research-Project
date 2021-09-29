@@ -23,6 +23,7 @@ class OclSELLSpMV:
         self.local_size = int(slice_height)
 
         # set memory flag
+        self.dev = dev
         self.mf = mf = cl.mem_flags
         mem_flag = mf.USE_HOST_PTR
         if dev == 'GPU':
@@ -62,6 +63,58 @@ class OclSELLSpMV:
         return sell_y
 
 
+class OclSELL2SpMV:
+    def __init__(self, n_row, slice_count, slice_col, colidx, val, dev='CPU'):
+        self.ctx = cl.create_some_context()
+        self.queue = cl.CommandQueue(self.ctx)
+
+        # read in the OpenCL source file as a string
+        f = open('FasterSpMV/oclkernels/oclSELL2Kernel.cl', 'r')
+        fstr = ''.join(f.readlines())
+
+        # create the program
+        self.program = cl.Program(self.ctx, fstr).build()
+
+        # set data
+        self.n_row = n_row
+        self.slice_count = slice_count
+        self.slice_height = slice_height = 2
+
+        # set memory flag
+        self.dev = dev
+        self.mf = mf = cl.mem_flags
+        mem_flag = mf.USE_HOST_PTR
+        if dev == 'GPU':
+            mem_flag = mf.COPY_HOST_PTR
+        self.mem_flag = mem_flag
+
+        # create OpenCL buffers
+        self._y = np.empty((slice_count, slice_height), dtype=np.float32)
+        self.slice_col_buf = cl.Buffer(self.ctx,
+                                       mf.READ_ONLY | mem_flag,
+                                       hostbuf=slice_col)
+        self.colidx_buf = cl.Buffer(self.ctx,
+                                    mf.READ_ONLY | mem_flag,
+                                    hostbuf=colidx)
+        self.val_buf = cl.Buffer(self.ctx,
+                                 mf.READ_ONLY | mem_flag,
+                                 hostbuf=val)
+        self.y_buf = cl.Buffer(self.ctx,
+                               mf.WRITE_ONLY | mem_flag,
+                               hostbuf=self._y)
+
+    def run(self, x):
+        x_buf = cl.Buffer(self.ctx,
+                          self.mf.READ_ONLY | self.mem_flag,
+                          hostbuf=x)
+        self.program.sell2_spmv(self.queue, (self.slice_count,), None,
+                                self.slice_col_buf, self.colidx_buf,
+                                self.val_buf, x_buf, self.y_buf)
+        sell2_y = np.empty_like(self._y, dtype=np.float32)
+        cl.enqueue_copy(self.queue, sell2_y, self.y_buf)
+        return sell2_y.reshape(-1,)
+
+
 class OclSELL4SpMV:
     def __init__(self, n_row, slice_count, slice_col, colidx, val, dev='CPU'):
         self.ctx = cl.create_some_context()
@@ -80,6 +133,7 @@ class OclSELL4SpMV:
         self.slice_height = slice_height = 4
 
         # set memory flag
+        self.dev = dev
         self.mf = mf = cl.mem_flags
         mem_flag = mf.USE_HOST_PTR
         if dev == 'GPU':
@@ -131,6 +185,7 @@ class OclSELL8SpMV:
         self.slice_height = slice_height = 8
 
         # set memory flag
+        self.dev = dev
         self.mf = mf = cl.mem_flags
         mem_flag = mf.USE_HOST_PTR
         if dev == 'GPU':
@@ -164,6 +219,58 @@ class OclSELL8SpMV:
         return sell8_y.reshape(-1,)
 
 
+class OclSELL16SpMV:
+    def __init__(self, n_row, slice_count, slice_col, colidx, val, dev='CPU'):
+        self.ctx = cl.create_some_context()
+        self.queue = cl.CommandQueue(self.ctx)
+
+        # read in the OpenCL source file as a string
+        f = open('FasterSpMV/oclkernels/oclSELL16Kernel.cl', 'r')
+        fstr = ''.join(f.readlines())
+
+        # create the program
+        self.program = cl.Program(self.ctx, fstr).build()
+
+        # set data
+        self.n_row = n_row
+        self.slice_count = slice_count
+        self.slice_height = slice_height = 16
+
+        # set memory flag
+        self.dev = dev
+        self.mf = mf = cl.mem_flags
+        mem_flag = mf.USE_HOST_PTR
+        if dev == 'GPU':
+            mem_flag = mf.COPY_HOST_PTR
+        self.mem_flag = mem_flag
+
+        # create OpenCL buffers
+        self._y = np.empty((slice_count, slice_height), dtype=np.float32)
+        self.slice_col_buf = cl.Buffer(self.ctx,
+                                       mf.READ_ONLY | mem_flag,
+                                       hostbuf=slice_col)
+        self.colidx_buf = cl.Buffer(self.ctx,
+                                    mf.READ_ONLY | mem_flag,
+                                    hostbuf=colidx)
+        self.val_buf = cl.Buffer(self.ctx,
+                                 mf.READ_ONLY | mem_flag,
+                                 hostbuf=val)
+        self.y_buf = cl.Buffer(self.ctx,
+                               mf.WRITE_ONLY | mem_flag,
+                               hostbuf=self._y)
+
+    def run(self, x):
+        x_buf = cl.Buffer(self.ctx,
+                          self.mf.READ_ONLY | self.mem_flag,
+                          hostbuf=x)
+        self.program.sell16_spmv(self.queue, (self.slice_count,), None,
+                                 self.slice_col_buf, self.colidx_buf,
+                                 self.val_buf, x_buf, self.y_buf)
+        sell16_y = np.empty_like(self._y, dtype=np.float32)
+        cl.enqueue_copy(self.queue, sell16_y, self.y_buf)
+        return sell16_y.reshape(-1,)
+
+
 class OclSELLRdSpMV:
     def __init__(self, n_row, slice_count, slice_ptr,
                  slice_col, colidx, val, slice_height, row_th, dev='CPU'):
@@ -186,6 +293,7 @@ class OclSELLRdSpMV:
         self.global_size = int(slice_count * slice_height * row_th)
 
         # set memory flag
+        self.dev = dev
         self.mf = mf = cl.mem_flags
         mem_flag = mf.USE_HOST_PTR
         if dev == 'GPU':
@@ -229,7 +337,7 @@ class OclSELLRdSpMV:
 
 
 class OclCSRSpMV:
-    def __init__(self, num_row, rowptr, colidx, val, dev='CPU'):
+    def __init__(self, n_row, rowptr, colidx, val, dev='CPU'):
         self.ctx = cl.create_some_context()
         self.queue = cl.CommandQueue(self.ctx)
 
@@ -241,9 +349,10 @@ class OclCSRSpMV:
         self.program = cl.Program(self.ctx, fstr).build()
 
         # set data
-        self.num_row = num_row
+        self.n_row = n_row
 
         # set memory flag
+        self.dev = dev
         self.mf = mf = cl.mem_flags
         mem_flag = mf.USE_HOST_PTR
         if dev == 'GPU':
@@ -252,7 +361,7 @@ class OclCSRSpMV:
 
         # create OpenCL buffers
         mf = cl.mem_flags
-        self._y = np.empty(num_row, dtype=np.float32)
+        self._y = np.empty(n_row, dtype=np.float32)
         self.rowptr_buf = cl.Buffer(self.ctx,
                                     mf.READ_ONLY | mem_flag,
                                     hostbuf=rowptr)
@@ -271,7 +380,7 @@ class OclCSRSpMV:
         x_buf = cl.Buffer(self.ctx,
                           self.mf.READ_ONLY | self.mem_flag,
                           hostbuf=x)
-        self.program.csr_spmv(self.queue, (self.num_row,), None,
+        self.program.csr_spmv(self.queue, (self.n_row,), None,
                               self.rowptr_buf, self.colidx_buf,
                               self.val_buf, x_buf, self.y_buf)
         csr_y = np.empty_like(self._y, dtype=np.float32)

@@ -4,3 +4,4 @@ setuptools
 pyopencl
 scipy
 pytest
+pycuda

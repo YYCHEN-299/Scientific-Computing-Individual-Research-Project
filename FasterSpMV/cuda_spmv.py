@@ -68,7 +68,7 @@ def cuda_sell_spmv(slice_ptr, colidx, val, x, slice_height, y):
     cuda.syncthreads()
     for i in range(local_idx[0] + slice_row_id, local_idx[1], slice_height):
         row_data = fmaf(x[colidx[i]], val[i], row_data)
-    y[mul24(slice_id, slice_height) + slice_row_id] = row_data
+    y[slice_id * slice_height + slice_row_id] = row_data
 
 
 @cuda.jit(fastmath=True)
