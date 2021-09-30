@@ -1,10 +1,8 @@
-import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
-from numba import cuda
 
-from FasterSpMV.matrix_tools import *
 from FasterSpMV.cuda_spmv import *
+from FasterSpMV.matrix_tools import *
 
 
 def test_spmv():

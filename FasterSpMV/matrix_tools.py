@@ -1,6 +1,6 @@
+import itertools
 import math
 import random
-import itertools
 
 import numpy as np
 from pyopencl import cltypes

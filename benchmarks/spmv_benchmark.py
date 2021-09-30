@@ -3,10 +3,10 @@ import time
 from scipy.sparse import csr_matrix
 
 from FasterSpMV.benchmark_tools import find_instr
+from FasterSpMV.cuda_spmv import *
 from FasterSpMV.matrix_tools import *
 from FasterSpMV.numba_spmv import *
 from FasterSpMV.opencl_spmv import *
-from FasterSpMV.cuda_spmv import *
 from FasterSpMV.pycuda_spmv import *
 
 

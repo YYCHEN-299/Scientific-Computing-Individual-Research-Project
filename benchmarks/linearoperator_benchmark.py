@@ -1,9 +1,7 @@
 import os
 import time
 
-import numpy as np
 from scipy.sparse import csr_matrix
-
 from scipy.sparse.linalg import LinearOperator, gmres
 
 from FasterSpMV.matrix_tools import *

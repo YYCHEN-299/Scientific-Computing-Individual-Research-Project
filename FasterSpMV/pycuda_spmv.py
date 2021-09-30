@@ -1,7 +1,5 @@
-import pycuda.driver as drv
 import numpy as np
-
-import pycuda.autoinit  # must be imported
+import pycuda.driver as drv
 from pycuda.compiler import SourceModule
 
 
