@@ -4,22 +4,11 @@ The Sparse matrix-vector multiplication (SpMV) operation (y = A ∗ x) is widely
 
 CSR format stores nonzero elements discretely; thus, each multiplication needs memory access to fetch the nonzero elements in the matrix as well as the corresponding elements in the dense vector. Hence, a new pattern is needed to ameliorate this drawback [2].
 
-## Goals
-In order to learn the advantages of SIMD acceleration technology and sparse matrix storge format, the goals of my project are:
-1.	Implement Sliced ELLPACK format and the SpMV algorithm based on it.
-2.	Parallelize the Sliced ELLPACK format SpMV algorithm (At the first stage use Python and Numba, then use OpenCL).
-3.	Design a format converter to convert CSR format to Sliced ELLPACK format.
-4.	Compare SpMV performance between Sliced ELLPACK format and CSR format.
-
-## Steps
-1.	Understand current sparse matrix storage format and SpMV algorithms.
-2.	Understand SIMD acceleration technology in SpMV.
-3.	Find the reason why current sparse matrix storage format and current SpMV algorithms are not good.
-e.g.: Loop remainder, Data locality, Inefficient use of CPU, SIMD-unfriendly, …
-4.	Implement Sliced ELLPACK format and the SpMV algorithm based on it (Use Python and Numba).
-5.	Design a format converter to convert CSR format to Sliced ELLPACK format.
-6.	Understand how to design an OpenCL software and use OpenCL to implement Sliced ELLPACK format SpMV.
-7.	Compare SpMV performance between Sliced ELLPACK format and CSR format.
+## Results
+1.	A converter for convert the CSR format to the Sliced ELLPACK format.
+2.	Parallel SpMV kernels (through Numba, PyOpenCL and PyCUDA).
+3.	SpMV performance benchmarks between the Sliced ELLPACK and the CSR.
+4.	A SpMV class adapted to the SciPy LinearOperator for iterative solvers.
 
 ## Basic concepts
 ### CSR:
@@ -40,6 +29,9 @@ As its name indicates, instead of performing a single instruction on every singl
 
 ### OpenCL:
 Open Computing Language (OpenCL) is one of the programming languages. It is an industry standard framework for programming computers composed of a combination of CPUs, GPUs and other processors. These so-called heterogeneous systems have become an important class of platforms, and OpenCL is the first industry standard that directly addresses their needs [4].
+
+### CUDA:
+Compute Unified Device Architecture (CUDA) is a proprietary API and language extension set released by NVIDIA. It can program NVIDIA GPU and make GPU computing more widely used.
 
 ### Temporal locality:
 If at one point a particular memory location is referenced, then it is likely that the same location will be referenced again soon. There is temporal proximity between adjacent references to the same memory location. In this case it is common to make efforts to store a copy of the referenced data in faster memory storage, to reduce the latency of subsequent references. Temporal locality is a special case of spatial locality, namely when the prospective location is identical to the present location.
