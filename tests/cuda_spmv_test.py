@@ -3,8 +3,8 @@ import pytest
 from scipy.sparse import csr_matrix
 from numba import cuda
 
-from FasterSpMV.matrix_tools import csr_to_sell, random_spmatrix, spmatrix_to_csr
-from FasterSpMV.cuda_spmv import cuda_csr_spmv, cuda_sell_spmv
+from FasterSpMV.matrix_tools import *
+from FasterSpMV.cuda_spmv import *
 
 
 def test_spmv():
@@ -19,7 +19,7 @@ def test_spmv():
     csr_rowptr, csr_colidx, csr_val =  spmatrix_to_csr(sp_matrix)
 
     # convert CSR to Sliced ELLPACK format
-    slice_count, ell_colidx, ell_sliceptr, _, ell_val = \
+    slice_count, sell_colidx, sell_sliceptr, _, sell_val = \
         csr_to_sell(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
@@ -51,14 +51,14 @@ def test_spmv():
 
     # CUDA buffer
     bf_sell_y = cuda.device_array(slice_height * slice_count, dtype=np.float32)
-    bf_ell_sliceptr = cuda.to_device(ell_sliceptr)
-    bf_ell_colidx = cuda.to_device(ell_colidx)
-    bf_ell_val = cuda.to_device(ell_val)
+    bf_sell_sliceptr = cuda.to_device(sell_sliceptr)
+    bf_sell_colidx = cuda.to_device(sell_colidx)
+    bf_sell_val = cuda.to_device(sell_val)
     bf_x = cuda.to_device(x)
 
-    cuda_sell_spmv[nblocks, nthreads](bf_ell_sliceptr,
-                                      bf_ell_colidx,
-                                      bf_ell_val, bf_x,
+    cuda_sell_spmv[nblocks, nthreads](bf_sell_sliceptr,
+                                      bf_sell_colidx,
+                                      bf_sell_val, bf_x,
                                       slice_height,
                                       bf_sell_y)
     sell_y = bf_sell_y.copy_to_host()

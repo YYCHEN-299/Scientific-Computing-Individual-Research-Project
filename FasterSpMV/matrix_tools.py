@@ -852,6 +852,9 @@ def csr_to_2d_sell(n_row, rowptr, colidx, val, slice_height):
         None zero elements value of CSR format
     """
 
+    if slice_height < 0:
+        raise ValueError('The slice height must > 0')
+
     slice_number = math.floor(n_row / slice_height)  # number of full slices
     slice_count = math.ceil(n_row / slice_height)  # real number of slices
     nnz_count = 0
@@ -950,9 +953,9 @@ def get_col_list(data, row_th):
         itertools.chain.from_iterable(col_list)))
 
 
-def csr_to_align_sell(m, row_th, slice_height):
+def csr_to_sell_rd(m, row_th, slice_height):
     """
-    Convert CSR to align Sliced ELLPACK.
+    Convert CSR to Sliced ELLPACK for parallel reduction.
 
     Parameters
     ----------
@@ -974,6 +977,9 @@ def csr_to_align_sell(m, row_th, slice_height):
     slice_ptr : ndarrays
         Slice pointer
     """
+
+    if slice_height < 0:
+        raise ValueError('The slice height must > 0')
 
     align = int(slice_height * row_th)
     row_len = []

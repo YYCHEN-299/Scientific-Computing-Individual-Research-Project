@@ -136,37 +136,37 @@ def solver_gpu_benchmark(sp_matrix):
     sp_A = csr_matrix((csr_val, csr_colidx, csr_rowptr), shape=(n_row, n_col))
     y = sp_A.dot(x_exact)
 
-    # # === OpenCL GPU CSR test ===
-    # os.environ['PYOPENCL_CTX'] = '0'
-    #
-    # csr_spmvop = SpMVOperator('opencl', 'csr', 'GPU', n_row, n_col,
-    #                           csr_rowptr, csr_colidx, csr_val, 128)
-    # csr_A = LinearOperator((n_row, n_col), matvec=csr_spmvop.run_matvec)
-    #
-    # start = time.perf_counter()
-    # x, exitCode = gmres(csr_A, y)  # exit code 0 = converge
-    # end = time.perf_counter()
-    # err = np.linalg.norm(
-    #     x - x_exact, np.inf) / np.linalg.norm(x_exact, np.inf)
-    # print("OpenCL GPU CSR run time:", (end - start))
-    # print("OpenCL GPU CSR exit code:", exitCode)
-    # print("OpenCL GPU CSR result error:", err)
-    # print("")
-    #
-    # # === OpenCL GPU Sliced ELLPACK test ===
-    # sell_spmvop = SpMVOperator('opencl', 'sell', 'GPU', n_row, n_col,
-    #                            csr_rowptr, csr_colidx, csr_val, 128)
-    # sell_A = LinearOperator((n_row, n_col), matvec=sell_spmvop.run_matvec)
-    #
-    # start = time.perf_counter()
-    # x, exitCode = gmres(sell_A, y)  # exit code 0 = converge
-    # end = time.perf_counter()
-    # err = np.linalg.norm(
-    #     x - x_exact, np.inf) / np.linalg.norm(x_exact, np.inf)
-    # print("OpenCL GPU SELL run time:", (end - start))
-    # print("OpenCL GPU SELL exit code:", exitCode)
-    # print("OpenCL GPU SELL result error:", err)
-    # print("")
+    # === OpenCL GPU CSR test ===
+    os.environ['PYOPENCL_CTX'] = '0'
+
+    csr_spmvop = SpMVOperator('opencl', 'csr', 'GPU', n_row, n_col,
+                              csr_rowptr, csr_colidx, csr_val, 128)
+    csr_A = LinearOperator((n_row, n_col), matvec=csr_spmvop.run_matvec)
+
+    start = time.perf_counter()
+    x, exitCode = gmres(csr_A, y)  # exit code 0 = converge
+    end = time.perf_counter()
+    err = np.linalg.norm(
+        x - x_exact, np.inf) / np.linalg.norm(x_exact, np.inf)
+    print("OpenCL GPU CSR run time:", (end - start))
+    print("OpenCL GPU CSR exit code:", exitCode)
+    print("OpenCL GPU CSR result error:", err)
+    print("")
+
+    # === OpenCL GPU Sliced ELLPACK test ===
+    sell_spmvop = SpMVOperator('opencl', 'sell', 'GPU', n_row, n_col,
+                               csr_rowptr, csr_colidx, csr_val, 128)
+    sell_A = LinearOperator((n_row, n_col), matvec=sell_spmvop.run_matvec)
+
+    start = time.perf_counter()
+    x, exitCode = gmres(sell_A, y)  # exit code 0 = converge
+    end = time.perf_counter()
+    err = np.linalg.norm(
+        x - x_exact, np.inf) / np.linalg.norm(x_exact, np.inf)
+    print("OpenCL GPU SELL run time:", (end - start))
+    print("OpenCL GPU SELL exit code:", exitCode)
+    print("OpenCL GPU SELL result error:", err)
+    print("")
 
     # === CUDA CSR test ===
     csr_spmvop = SpMVOperator('cuda', 'csr', 'GPU', n_row, n_col,

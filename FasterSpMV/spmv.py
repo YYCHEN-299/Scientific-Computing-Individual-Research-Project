@@ -1,7 +1,6 @@
 from FasterSpMV.matrix_tools import *
 from FasterSpMV.numba_spmv import *
 from FasterSpMV.opencl_spmv import *
-from FasterSpMV.cuda_spmv import *
 from FasterSpMV.pycuda_spmv import *
 
 

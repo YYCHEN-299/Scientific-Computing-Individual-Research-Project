@@ -1,6 +1,6 @@
 import numpy as np
 from numba import cuda
-from numba.cuda.libdevice import fmaf, mul24
+from numba.cuda.libdevice import fmaf
 
 
 @cuda.jit(fastmath=True)

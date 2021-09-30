@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-from FasterSpMV.matrix_tools import csr_to_sell, random_spmatrix, spmatrix_to_csr
-from FasterSpMV.opencl_spmv import OclSELLSpMV, OclCSRSpMV
+from FasterSpMV.matrix_tools import *
+from FasterSpMV.opencl_spmv import *
 
 
 def test_spmv():
@@ -18,7 +18,7 @@ def test_spmv():
     csr_rowptr, csr_colidx, csr_val =  spmatrix_to_csr(sp_matrix)
 
     # convert CSR to Sliced ELLPACK format
-    slice_count, ell_colidx, ell_sliceptr, ell_slicecol, ell_val = \
+    slice_count, sell_colidx, sell_sliceptr, sell_slicecol, sell_val = \
         csr_to_sell(n_row, csr_rowptr, csr_colidx, csr_val, slice_height)
 
     # generate a random vector
@@ -31,12 +31,12 @@ def test_spmv():
 
     # run CSR SpMV
     csr_spmv = OclCSRSpMV(n_row, np.array(csr_rowptr), np.array(csr_colidx),
-                          np.array(csr_val, dtype=np.float32), x)
+                          np.array(csr_val, dtype=np.float32), 'CPU')
     csr_y = csr_spmv.run(x)
 
     # run Sliced ELLPACK SpMV
-    sell_spmv = OclSELLSpMV(n_row, slice_count, ell_sliceptr,
-                            ell_slicecol, ell_colidx, ell_val, x, slice_height)
+    sell_spmv = OclSELLSpMV(n_row, slice_count, sell_sliceptr, sell_slicecol,
+                            sell_colidx, sell_val, slice_height, 'CPU')
     sell_y = sell_spmv.run(x)
 
     # check the result

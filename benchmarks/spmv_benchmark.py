@@ -81,12 +81,12 @@ def spmv_cpu_csr_benchmark(sp_matrix, t):
     print("")
 
     # === find instructions ===
-    # print("CSR mul instructions:")
-    # find_instr(numba_csr_spmv, key='mul')
-    # print("")
-    # print("CSR add instructions:")
-    # find_instr(numba_csr_spmv, key='add')
-    # print("")
+    print("CSR mul instructions:")
+    find_instr(numba_csr_spmv, key='mul')
+    print("")
+    print("CSR add instructions:")
+    find_instr(numba_csr_spmv, key='add')
+    print("")
 
     # ========================================================================
     # OpenCL CPU SpMV
@@ -166,13 +166,13 @@ def spmv_cpu_sell_benchmark(sp_matrix, slice_height, t):
 
     # === find instructions ===
     # get instructions include mul
-    # print("SELL mul instructions:")
-    # find_instr(numba_sell_spmv, key='mul')
-    # print("")
-    # # get instructions include add
-    # print("SELL add instructions:")
-    # find_instr(numba_sell_spmv, key='add')
-    # print("")
+    print("SELL mul instructions:")
+    find_instr(numba_sell_spmv, key='mul')
+    print("")
+    # get instructions include add
+    print("SELL add instructions:")
+    find_instr(numba_sell_spmv, key='add')
+    print("")
 
     # ========================================================================
     # OpenCL CPU SpMV
