@@ -1,5 +1,0 @@
-1. Read and understand the source code of current sparse matrix storage format (CSR, ELLPACK, CSRL and others from research paper). (2-3 weeks)
-2. Learn SIMD acceleration technology in SpMV. (1-2 weeks)
-3. Implement Sliced ELLPACK format and the SpMV algorithm based on it (Use Python and Numba). (1-2 weeks)
-4. Design a format converter to convert CSR format to Sliced ELLPACK format. (1-2 weeks)
-5. Learn OpenCL and use OpenCL to implement Sliced ELLPACK format SpMV. (2-3 weeks)
