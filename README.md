@@ -1,8 +1,37 @@
 # Scientific-Computing-Individual-Research-Project
-## Background
+## How to run
+To test the speed of SpMV, you can write a script in Python, or use the attached CLI.
+It is recommended to download the dataset from the SuiteSparse Matrix Collection. If you have datasets from other sources, please make sure it is a .mtx file.
+
+### Run benchmarks in automatically
+The module _runbenchmarks.py_ can run all benchmarks automatically.
+
+### Run benchmarks in command line interface (CLI)
+CLI to multiply is in module _clibenchmarks.py_. Description all parameters get using flag **--help**. 
+
+You should: 
+
+Input .mtx matrix file with the flag **--file**.
+
+Input the number of times each test is run with the flag **--times**.
+
+Then, the benchmarks for all SpMV kernels will run automatically and the results will be printed out.
+
+### Run in script
+You can use module _matrix_tools.py_ to convert the CSR format matrix to the Sliced ELLPACK format.
+
+You can use module _numba_spmv.py_ to implement the Numba parallel SpMV kernels.
+
+You can use module _opencl_spmv.py_ to implement the OpenCL parallel SpMV kernels.
+
+You can use module _pycuda_spmv.py_ to implement the CUDA parallel SpMV kernels.
+
+You can generate the SciPy LinearOperator from module _spmv.py_.
+
+## Description
 The Sparse matrix-vector multiplication (SpMV) operation (y = A ∗ x) is widely used in scientific and engineering calculations. But CSR-based SpMV has poor performance on processors with vector units [1].
 
-CSR format stores nonzero elements discretely; thus, each multiplication needs memory access to fetch the nonzero elements in the matrix as well as the corresponding elements in the dense vector. Hence, a new pattern is needed to ameliorate this drawback [2].
+CSR format stores nonzero elements discretely; thus, each multiplication needs memory access to fetch the nonzero elements in the matrix as well as the corresponding elements in the dense vector. Hence, Monakov et al. developed a new sparse matrix storage format, which is called Sliced ELLPACK. This project implements the parallel CSR and Sliced ELLPACK SpMV kernel and compares their performance on the CPU and the GPU.
 
 ## Results
 1.	A converter for convert the CSR format to the Sliced ELLPACK format.
