@@ -81,12 +81,12 @@ def spmv_cpu_csr_benchmark(sp_matrix, t):
     print("")
 
     # === find instructions ===
-    print("CSR mul instructions:")
-    find_instr(numba_csr_spmv, key='mul')
-    print("")
-    print("CSR add instructions:")
-    find_instr(numba_csr_spmv, key='add')
-    print("")
+    # print("CSR mul instructions:")
+    # find_instr(numba_csr_spmv, key='mul')
+    # print("")
+    # print("CSR add instructions:")
+    # find_instr(numba_csr_spmv, key='add')
+    # print("")
 
     # ========================================================================
     # OpenCL CPU SpMV
@@ -166,13 +166,13 @@ def spmv_cpu_sell_benchmark(sp_matrix, slice_height, t):
 
     # === find instructions ===
     # get instructions include mul
-    print("SELL mul instructions:")
-    find_instr(numba_sell_spmv, key='mul')
-    print("")
-    # get instructions include add
-    print("SELL add instructions:")
-    find_instr(numba_sell_spmv, key='add')
-    print("")
+    # print("SELL mul instructions:")
+    # find_instr(numba_sell_spmv, key='mul')
+    # print("")
+    # # get instructions include add
+    # print("SELL add instructions:")
+    # find_instr(numba_sell_spmv, key='add')
+    # print("")
 
     # ========================================================================
     # OpenCL CPU SpMV
@@ -373,47 +373,47 @@ def spmv_gpu_csr_benchmark(sp_matrix, t):
     print(f"OpenCL CSR result error: {round(csr_rel_error, 2)}.")
     print("")
 
-    # ========================================================================
-    # CUDA SpMV
-    print("CUDA SpMV benchmark...")
-    print("")
-
-    # === CSR test ===
-    nblocks = (n_row,)  # global blocks
-    nthreads = (1,)  # threads per block
-
-    # CUDA buffer
-    csr_y = np.empty(n_row, dtype=np.float32)
-    bf_csr_rowptr = cuda.to_device(csr_rowptr)
-    bf_csr_colidx = cuda.to_device(csr_colidx)
-    bf_csr_val = cuda.to_device(csr_val)
-    bf_x = cuda.to_device(x)
-    # _csr_y = np.empty(n_row, dtype=np.float32)
-    # bf_csr_y = cuda.to_device(csr_y, stream=stream)
-    bf_csr_y = cuda.device_array(n_row, dtype=np.float32)
-    # cuda.driver.host_to_device()
-    # first run
-    cuda_csr_spmv[nblocks, nthreads](bf_csr_rowptr, bf_csr_colidx,
-                                     bf_csr_val, bf_x, bf_csr_y)
-
-    csr_time_list = []
-    for _ in range(t):
-        start = time.perf_counter()
-        bf_x = cuda.to_device(x)
-        cuda_csr_spmv[nblocks, nthreads](bf_csr_rowptr, bf_csr_colidx,
-                                         bf_csr_val, bf_x, bf_csr_y)
-        bf_csr_y.copy_to_host(csr_y)
-        end = time.perf_counter()
-        csr_time_list.append((end - start))
-
-    print("CUDA CSR avg run time:", np.mean(csr_time_list))
-    print("CUDA CSR min run time:", np.min(csr_time_list))
-    print("CUDA CSR run time std:", np.std(csr_time_list))
-    bf_csr_y.copy_to_host(csr_y)
-    csr_rel_error = np.linalg.norm(
-        csr_y - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
-    print(f"CUDA CSR result error: {round(csr_rel_error, 2)}.")
-    print("")
+    # # ========================================================================
+    # # CUDA SpMV
+    # print("CUDA SpMV benchmark...")
+    # print("")
+    #
+    # # === CSR test ===
+    # nblocks = (n_row,)  # global blocks
+    # nthreads = (1,)  # threads per block
+    #
+    # # CUDA buffer
+    # csr_y = np.empty(n_row, dtype=np.float32)
+    # bf_csr_rowptr = cuda.to_device(csr_rowptr)
+    # bf_csr_colidx = cuda.to_device(csr_colidx)
+    # bf_csr_val = cuda.to_device(csr_val)
+    # bf_x = cuda.to_device(x)
+    # # _csr_y = np.empty(n_row, dtype=np.float32)
+    # # bf_csr_y = cuda.to_device(csr_y, stream=stream)
+    # bf_csr_y = cuda.device_array(n_row, dtype=np.float32)
+    # # cuda.driver.host_to_device()
+    # # first run
+    # cuda_csr_spmv[nblocks, nthreads](bf_csr_rowptr, bf_csr_colidx,
+    #                                  bf_csr_val, bf_x, bf_csr_y)
+    #
+    # csr_time_list = []
+    # for _ in range(t):
+    #     start = time.perf_counter()
+    #     bf_x = cuda.to_device(x)
+    #     cuda_csr_spmv[nblocks, nthreads](bf_csr_rowptr, bf_csr_colidx,
+    #                                      bf_csr_val, bf_x, bf_csr_y)
+    #     bf_csr_y.copy_to_host(csr_y)
+    #     end = time.perf_counter()
+    #     csr_time_list.append((end - start))
+    #
+    # print("CUDA CSR avg run time:", np.mean(csr_time_list))
+    # print("CUDA CSR min run time:", np.min(csr_time_list))
+    # print("CUDA CSR run time std:", np.std(csr_time_list))
+    # bf_csr_y.copy_to_host(csr_y)
+    # csr_rel_error = np.linalg.norm(
+    #     csr_y - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
+    # print(f"CUDA CSR result error: {round(csr_rel_error, 2)}.")
+    # print("")
 
 
 def spmv_gpu_sell_benchmark(sp_matrix, slice_height, t):
@@ -467,56 +467,56 @@ def spmv_gpu_sell_benchmark(sp_matrix, slice_height, t):
     print(f"OpenCL SELL result error: {round(sell_rel_error, 2)}.")
     print("")
 
-    # ========================================================================
-    # CUDA SpMV
-    print("CUDA SpMV benchmark...")
-    print("")
-
-    # === Sliced ELLPACK test ===
-    nblocks = (slice_count,)  # global blocks
-    nthreads = (slice_height,)  # threads per block, better be multiple of 32
-
-    # CUDA buffer
-    # _sell_y = np.empty(slice_height * slice_count, dtype=np.float32)
-    # bf_sell_y = cuda.to_device(_sell_y)
-    bf_sell_y = cuda.device_array(slice_height * slice_count,
-                                  dtype=np.float32)
-    sell_y = np.empty(slice_height * slice_count, dtype=np.float32)
-    bf_sell_sliceptr = cuda.to_device(sell_sliceptr)
-    bf_sell_colidx = cuda.to_device(sell_colidx)
-    bf_sell_val = cuda.to_device(sell_val)
-    bf_x = cuda.to_device(x)
-    # bf_x = cuda.pinned(x)
-
-    # first run
-    cuda_sell_spmv[nblocks, nthreads](bf_sell_sliceptr,
-                                      bf_sell_colidx,
-                                      bf_sell_val, bf_x,
-                                      slice_height,
-                                      bf_sell_y)
-
-    sell_time_list = []
-    for _ in range(t):
-        start = time.perf_counter()
-        bf_x = cuda.to_device(x)
-        cuda_sell_spmv[nblocks, nthreads](bf_sell_sliceptr,
-                                          bf_sell_colidx,
-                                          bf_sell_val, bf_x,
-                                          slice_height,
-                                          bf_sell_y)
-        bf_sell_y.copy_to_host(sell_y)
-        end = time.perf_counter()
-        sell_time_list.append((end - start))
-
-    print("Slice height:", slice_height)
-    print("CUDA SELL avg run time:", np.mean(sell_time_list))
-    print("CUDA SELL min run time:", np.min(sell_time_list))
-    print("CUDA SELL run time std:", np.std(sell_time_list))
-    bf_sell_y.copy_to_host(sell_y)
-    sell_rel_error = np.linalg.norm(
-        sell_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
-    print(f"CUDA SELL result error: {round(sell_rel_error, 2)}.")
-    print("")
+    # # ========================================================================
+    # # CUDA SpMV
+    # print("CUDA SpMV benchmark...")
+    # print("")
+    #
+    # # === Sliced ELLPACK test ===
+    # nblocks = (slice_count,)  # global blocks
+    # nthreads = (slice_height,)  # threads per block, better be multiple of 32
+    #
+    # # CUDA buffer
+    # # _sell_y = np.empty(slice_height * slice_count, dtype=np.float32)
+    # # bf_sell_y = cuda.to_device(_sell_y)
+    # bf_sell_y = cuda.device_array(slice_height * slice_count,
+    #                               dtype=np.float32)
+    # sell_y = np.empty(slice_height * slice_count, dtype=np.float32)
+    # bf_sell_sliceptr = cuda.to_device(sell_sliceptr)
+    # bf_sell_colidx = cuda.to_device(sell_colidx)
+    # bf_sell_val = cuda.to_device(sell_val)
+    # bf_x = cuda.to_device(x)
+    # # bf_x = cuda.pinned(x)
+    #
+    # # first run
+    # cuda_sell_spmv[nblocks, nthreads](bf_sell_sliceptr,
+    #                                   bf_sell_colidx,
+    #                                   bf_sell_val, bf_x,
+    #                                   slice_height,
+    #                                   bf_sell_y)
+    #
+    # sell_time_list = []
+    # for _ in range(t):
+    #     start = time.perf_counter()
+    #     bf_x = cuda.to_device(x)
+    #     cuda_sell_spmv[nblocks, nthreads](bf_sell_sliceptr,
+    #                                       bf_sell_colidx,
+    #                                       bf_sell_val, bf_x,
+    #                                       slice_height,
+    #                                       bf_sell_y)
+    #     bf_sell_y.copy_to_host(sell_y)
+    #     end = time.perf_counter()
+    #     sell_time_list.append((end - start))
+    #
+    # print("Slice height:", slice_height)
+    # print("CUDA SELL avg run time:", np.mean(sell_time_list))
+    # print("CUDA SELL min run time:", np.min(sell_time_list))
+    # print("CUDA SELL run time std:", np.std(sell_time_list))
+    # bf_sell_y.copy_to_host(sell_y)
+    # sell_rel_error = np.linalg.norm(
+    #     sell_y[:n_row] - y_exact, np.inf) / np.linalg.norm(y_exact, np.inf)
+    # print(f"CUDA SELL result error: {round(sell_rel_error, 2)}.")
+    # print("")
 
 
 def spmv_pycuda_csr_benchmark(sp_matrix, t):

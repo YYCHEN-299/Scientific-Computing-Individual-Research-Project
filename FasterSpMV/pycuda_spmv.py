@@ -1,6 +1,10 @@
 import numpy as np
+import pycuda.autoinit
 import pycuda.driver as drv
+
 from pycuda.compiler import SourceModule
+
+_ = pycuda.autoinit.cuda
 
 
 class PyCUDASELLSpMV:
