@@ -4,11 +4,11 @@ The Sparse matrix-vector multiplication (SpMV) operation (y = A ∗ x) is widely
 
 CSR format stores nonzero elements discretely; thus, each multiplication needs memory access to fetch the nonzero elements in the matrix as well as the corresponding elements in the dense vector. Hence, a new pattern is needed to ameliorate this drawback [2].
 
-## Goals
-In order to learn the advantages of SIMD acceleration technology and sparse matrix storge format, the goals of this project are:
-1.	Implement Sliced ELLPACK format and the SpMV algorithm based on it.
-2.	Parallelize the Sliced ELLPACK format SpMV algorithm (At the first stage use Numba, then use OpenCL and CUDA).
-3.	Compare SpMV performance between the Sliced ELLPACK format and the CSR format.
+## Results
+1.	A converter for convert the CSR format to the Sliced ELLPACK format.
+2.	Parallel SpMV kernels (through Numba, PyOpenCL and PyCUDA).
+3.	SpMV performance benchmarks between the Sliced ELLPACK and the CSR.
+4.	A SpMV class adapted to the SciPy LinearOperator for iterative solvers.
 
 ## Basic concepts
 ### CSR:
